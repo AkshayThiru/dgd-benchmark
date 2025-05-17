@@ -1,6 +1,7 @@
 #include <dgd/data_types.h>
 #include <dgd/utils.h>
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "dsf/dsf_interface.h"
 
 int main() {
+  // Mesh sets.
   std::vector<dgd::Vec3f> vert;
   double inradius, margin{0.0};
   constexpr unsigned int exp{16};
@@ -19,10 +21,12 @@ int main() {
 
   set1->VDSFPtr()->PrintInfo();
 
+  // Rigid bosy transforms.
   dgd::Transform3f tf1, tf2;
   dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf1);
   dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
 
+  // Growth distance.
   const dsf::Settings settings{};
   dsf::Output out{};
   double gd{dsf::GrowthDistance(set1->VDSFPtr(), tf1, set2->VDSFPtr(), tf2, out,
