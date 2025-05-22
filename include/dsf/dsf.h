@@ -2,6 +2,7 @@
 #define DSF_DSF_H_
 
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include "dsf/precompiled.h"
@@ -16,17 +17,16 @@ class DSF {
 
   virtual ~DSF() {}
 
-  virtual void SupportFunc(const Vector3d& /*x*/, const Vector3d& /*pos*/,
-                           const Matrix3d& /*R*/, Vector3d& /*s*/) {}
+  virtual void SupportFunction(const Vec3& /*x*/, const Vec3& /*pos*/,
+                               const Rotation3& /*R*/, Vec3& /*s*/) {}
 
-  virtual void SupportFunc(const Vector3d& /*x*/, const Vector3d& /*pos*/,
-                           const Matrix3d& /*R*/, Vector3d& /*s*/,
-                           Matrix3d& /*dsdx*/) {}
+  virtual void SupportFunction(const Vec3& /*x*/, const Vec3& /*pos*/,
+                               const Rotation3& /*R*/, Vec3& /*s*/,
+                               Mat3& /*dsdx*/) {}
 
-  virtual void SupportFunc(const Vector3d& /*x*/, const Vector3d& /*pos*/,
-                           const Matrix3d& /*R*/, Vector3d& /*s*/,
-                           Matrix3d& /*dsdx*/, Matrix<double, 3, 6>& /*dsdq*/) {
-  }
+  virtual void SupportFunction(const Vec3& /*x*/, const Vec3& /*pos*/,
+                               const Rotation3& /*R*/, Vec3& /*s*/,
+                               Mat3& /*dsdx*/, Mat<3, 6>& /*dsdq*/) {}
 
   virtual void PrintInfo() {}
 };
@@ -34,33 +34,25 @@ class DSF {
 // Vertex DSF class.
 template <int exp>
 class VDSF : public DSF {
- private:
-  std::vector<Matrix3d> vvt_;
-  const std::vector<Vector3d> vert_;
-  std::vector<double> vx_;
-  const int N_v_;
-
-  static constexpr double thresh_{0.1};
-
  public:
-  VDSF(const std::vector<Vector3d>& vert)
-      : DSF(), vert_(vert), N_v_(static_cast<int>(vert_.size())) {
+  VDSF(const std::vector<Vec3>& vert)
+      : DSF(), vert_(vert), nvert_(vert_.size()) {
     static_assert(exp > 1, "Exponent must be greater than 1.");
 
-    vvt_.resize(N_v_);
-    for (int i = 0; i < N_v_; ++i) {
+    vvt_.resize(nvert_);
+    for (std::size_t i = 0; i < nvert_; ++i) {
       vvt_[i] = vert_[i] * vert_[i].transpose();
     }
-    vx_.resize(N_v_);
+    vx_.resize(nvert_);
   }
 
   ~VDSF() {}
 
-  void SupportFunc(const Vector3d& x, const Vector3d& pos, const Matrix3d& R,
-                   Vector3d& s) final override {
-    const Vector3d xt{R.transpose() * x};
+  void SupportFunction(const Vec3& x, const Vec3& pos, const Rotation3& R,
+                       Vec3& s) final override {
+    const Vec3 xt{R.transpose() * x};
     double max_vx{0.0};
-    for (int i = 0; i < N_v_; ++i) {
+    for (std::size_t i = 0; i < nvert_; ++i) {
       vx_[i] = std::max(vert_[i].dot(xt), 0.0);
       max_vx = std::max(max_vx, vx_[i]);
     }
@@ -69,9 +61,9 @@ class VDSF : public DSF {
     double rvx, powa;
     const double max_vxi{1.0 / max_vx};
     double powa_sum{0.0};
-    for (int i = 0; i < N_v_; ++i) {
+    for (size_t i = 0; i < nvert_; ++i) {
       rvx = vx_[i] * max_vxi;
-      if (rvx > thresh_) {
+      if (rvx > kThresh) {
         powa = Power<exp - 1>(rvx);
         s += powa * vert_[i];
         powa_sum += rvx * powa;
@@ -83,11 +75,11 @@ class VDSF : public DSF {
     s = pos + R * s;
   }
 
-  void SupportFunc(const Vector3d& x, const Vector3d& pos, const Matrix3d& R,
-                   Vector3d& s, Matrix3d& dsdx) final override {
-    const Vector3d xt{R.transpose() * x};
+  void SupportFunction(const Vec3& x, const Vec3& pos, const Rotation3& R,
+                       Vec3& s, Mat3& dsdx) final override {
+    const Vec3 xt{R.transpose() * x};
     double max_vx{0.0};
-    for (int i = 0; i < N_v_; ++i) {
+    for (std::size_t i = 0; i < nvert_; ++i) {
       vx_[i] = std::max(vert_[i].dot(xt), 0.0);
       max_vx = std::max(max_vx, vx_[i]);
     }
@@ -97,9 +89,9 @@ class VDSF : public DSF {
     double rvx, powa, powa2;
     const double max_vxi{1.0 / max_vx};
     double powa_sum{0.0};
-    for (int i = 0; i < N_v_; ++i) {
+    for (std::size_t i = 0; i < nvert_; ++i) {
       rvx = vx_[i] * max_vxi;
-      if (rvx > thresh_) {
+      if (rvx > kThresh) {
         powa2 = Power<exp - 2>(rvx);
         powa = powa2 * rvx;
         s += powa * vert_[i];
@@ -116,12 +108,11 @@ class VDSF : public DSF {
     dsdx = R * dsdx * R.transpose();
   }
 
-  void SupportFunc(const Vector3d& x, const Vector3d& pos, const Matrix3d& R,
-                   Vector3d& s, Matrix3d& dsdx,
-                   Matrix<double, 3, 6>& dsdq) final override {
-    SupportFunc(x, pos, R, s, dsdx);
-    dsdq.block<3, 3>(0, 0) = Matrix3d::Identity();
-    Matrix3d Ws_pos, Wx;
+  void SupportFunction(const Vec3& x, const Vec3& pos, const Rotation3& R,
+                       Vec3& s, Mat3& dsdx, Mat<3, 6>& dsdq) final override {
+    SupportFunction(x, pos, R, s, dsdx);
+    dsdq.block<3, 3>(0, 0) = Mat3::Identity();
+    Mat3 Ws_pos, Wx;
     Skew(s - pos, Ws_pos);
     Skew(x, Wx);
     dsdq.block<3, 3>(0, 3) = (-Ws_pos + dsdx * Wx) * R;
@@ -129,10 +120,18 @@ class VDSF : public DSF {
 
   void PrintInfo() final override {
     std::cout << "===== VDSF info =====" << std::endl;
-    std::cout << "N_v: " << N_v_ << std::endl;
-    std::cout << "exp: " << exp << std::endl;
+    std::cout << "nvert: " << nvert_ << std::endl;
+    std::cout << "exp  : " << exp << std::endl;
     std::cout << "=====================" << std::endl;
   }
+
+ private:
+  std::vector<Mat3> vvt_;
+  const std::vector<Vec3> vert_;
+  std::vector<double> vx_;
+  const std::size_t nvert_;
+
+  static constexpr double kThresh{0.1};
 };
 
 }  // namespace dsf

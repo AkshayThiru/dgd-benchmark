@@ -6,7 +6,7 @@
 
 namespace dsf {
 
-double LoadOBJ(const std::string& file, std::vector<dgd::Vec3f>& vert) {
+double LoadOBJ(const std::string& file, std::vector<Vec3>& vert) {
   dgd::MeshLoader ml{};
   ml.LoadOBJ(file);
 
@@ -14,7 +14,7 @@ double LoadOBJ(const std::string& file, std::vector<dgd::Vec3f>& vert) {
   std::vector<int> graph;
   bool valid{ml.MakeVertexGraph(vert, graph)};
   if (!valid) throw std::runtime_error("Qhull error");
-  dgd::Vec3f center;
+  Vec3 center;
   const double inradius{ml.ComputeInradius(center)};
   for (auto& v : vert) v -= center;
   return inradius;

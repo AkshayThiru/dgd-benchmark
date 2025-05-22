@@ -6,14 +6,14 @@
 namespace dsf {
 
 // Quaternion SE(3) to Matrix SE(3).
-inline void Quaternion2RotationSe3(const Vector<double, 7>& tfq, Matrix4d& tf) {
-  tf.block<3, 3>(0, 0) = Quaterniond(tfq.tail<4>()).toRotationMatrix();
+inline void Quaternion2RotationSe3(const Vec<7>& tfq, Transform3& tf) {
+  tf.block<3, 3>(0, 0) = Quaternion(tfq.tail<4>()).toRotationMatrix();
   tf.block<3, 1>(0, 3) = tfq.head<3>();
-  tf.row(3) = Vector4d::UnitW().transpose();
+  tf.row(3) = Vec4::UnitW().transpose();
 }
 
 // Hat map.
-inline void Skew(const Vector3d& w, Matrix3d& W) {
+inline void Skew(const Vec3& w, Mat3& W) {
   W << 0.0, -w(2), w(1), w(2), 0.0, -w(0), -w(1), w(0), 0.0;
 }
 

@@ -30,15 +30,20 @@ const double kEpsSqrt{std::sqrt(kEps)};
     std::exit(EXIT_FAILURE);                    \
   } while (0)
 
-using Eigen::Vector;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
+template <int dim>
+using Vec = Eigen::Vector<double, dim>;
+typedef Eigen::Vector3d Vec3;
+typedef Eigen::Vector4d Vec4;
 
-using Eigen::Matrix;
-using Eigen::Matrix3d;
-using Eigen::Matrix4d;
+template <int row, int col>
+using Mat = Eigen::Matrix<double, row, col>;
+typedef Eigen::Matrix3d Mat3;
+typedef Eigen::Matrix4d Mat4;
 
-using Eigen::Quaterniond;
+typedef Mat3 Rotation3;
+typedef Mat4 Transform3;
+
+typedef Eigen::Quaterniond Quaternion;
 
 }  // namespace dsf
 

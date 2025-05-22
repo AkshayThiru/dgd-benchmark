@@ -18,11 +18,12 @@ struct Settings {
 
 // Differentiable contact feature.
 struct DCF {
-  Matrix<double, 3, 12> dnormal;
-  Matrix<double, 3, 12> dp1, dp2;
-  Matrix<double, 1, 12> dgap;
-  Vector3d normal;
-  Vector3d p1, p2;
+  Mat<3, 12> dnormal;
+  Mat<3, 12> dp1, dp2;
+  Mat<1, 12> dgap;
+  // normal points along pos2 - pos1.
+  Vec3 normal;
+  Vec3 p1, p2;
   double gap;
 };
 
@@ -37,18 +38,18 @@ enum class SolutionStatus : uint8_t {
 struct Output {
   DCF dcf;
   int iter{0};
-  SolutionStatus status;
+  SolutionStatus status{SolutionStatus::MaxIterReached};
 };
 
 // Computes the growth distance.
-double GrowthDistance(DSF* dsf1, const Matrix4d& tf1, DSF* dsf2,
-                      const Matrix4d& tf2, Output& out,
+double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
+                      const Transform3& tf2, Output& out,
                       const Settings& settings);
 
-inline double GrowthDistance(DSF* dsf1, const Vector<double, 7>& tfq1,
-                             DSF* dsf2, const Vector<double, 7>& tfq2,
-                             Output& out, const Settings& settings) {
-  Matrix4d tf1, tf2;
+inline double GrowthDistance(DSF* dsf1, const Vec<7>& tfq1, DSF* dsf2,
+                             const Vec<7>& tfq2, Output& out,
+                             const Settings& settings) {
+  Transform3 tf1, tf2;
   Quaternion2RotationSe3(tfq1, tf1);
   Quaternion2RotationSe3(tfq2, tf2);
   return GrowthDistance(dsf1, tf1, dsf2, tf2, out, settings);
@@ -61,8 +62,8 @@ struct SolutionError {
   double dual_feas_err{0.0};
 };
 
-SolutionError ComputeSolutionError(DSF* dsf1, const Matrix4d& tf1, DSF* dsf2,
-                                   const Matrix4d& tf2, Output& out);
+SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
+                                   const Transform3& tf2, Output& out);
 
 }  // namespace dsf
 
