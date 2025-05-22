@@ -3,10 +3,15 @@ set(DSF_SOURCES
   "${PROJECT_SOURCE_DIR}/src/dsf/dsf_collision.cc"
   "${PROJECT_SOURCE_DIR}/src/dsf/dsf_interface.cc"
 )
+set(INC_SOURCES
+  "${PROJECT_SOURCE_DIR}/src/inc/incremental.cc"
+  "${PROJECT_SOURCE_DIR}/src/inc/polyhedron.cc"
+)
 
 # Benchmark library
 add_library(bench STATIC
   ${DSF_SOURCES}
+  ${INC_SOURCES}
 )
 
 target_include_directories(bench
