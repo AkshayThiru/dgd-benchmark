@@ -1,10 +1,10 @@
-#ifndef INC_LINEAR_SOLVER_H_
-#define INC_LINEAR_SOLVER_H_
+#ifndef DGD_BENCHMARK_INC_LINEAR_SOLVER_H_
+#define DGD_BENCHMARK_INC_LINEAR_SOLVER_H_
 
 #include <Eigen/Dense>
 #include <cmath>
 
-#include "inc/data_types.h"
+#include "dgd_benchmark/inc/data_types.h"
 
 namespace inc {
 
@@ -50,7 +50,7 @@ inline LinearSolver::LinearSolver(double tolerance) : tol_(tolerance) {}
 
 inline bool LinearSolver::ComputeFaceFaceGradient(const Mat4& A, Vec3& dx) {
   ff_.mat = A.block<3, 2>(0, 0).transpose() * A.block<3, 2>(0, 0);
-  const double det{ff_.mat.determinant()};
+  const double det = ff_.mat.determinant();
 
   if (det < tol_ * ff_.mat(0, 0) * ff_.mat(1, 1)) return false;
 
@@ -80,7 +80,7 @@ inline bool LinearSolver::ComputeFinalDual(const Mat4& A, Vec4& lambda) {
 
 inline void LinearSolver::ComputeFinalGradient(int i, double lambdai,
                                                Vec3& dx) {
-  Vec4 ei{Vec4::Zero()};
+  Vec4 ei = Vec4::Zero();
   ei(i) = 1.0;
   dx = f_.lu.transpose().solve(ei).eval().head<3>() / lambdai;
 }
@@ -101,4 +101,4 @@ inline bool LinearSolver::ComputeWarmStartSolution(const Mat4& A, const Vec4& b,
 
 }  // namespace inc
 
-#endif  // INC_LINEAR_SOLVER_H_
+#endif  // DGD_BENCHMARK_INC_LINEAR_SOLVER_H_

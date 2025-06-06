@@ -1,5 +1,5 @@
-#ifndef DSF_PRECOMPILED_H_
-#define DSF_PRECOMPILED_H_
+#ifndef DGD_BENCHMARK_DSF_PRECOMPILED_H_
+#define DGD_BENCHMARK_DSF_PRECOMPILED_H_
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -10,8 +10,9 @@
 
 namespace dsf {
 
-const double kEps{std::numeric_limits<double>::epsilon()};
-const double kEpsSqrt{std::sqrt(kEps)};
+const double kInf = std::numeric_limits<double>::infinity();
+const double kEps = std::numeric_limits<double>::epsilon();
+const double kSqrtEps = std::sqrt(kEps);
 
 #define COUT_CHECK std::cout << "CHECK" << std::endl;
 #define COUT_SCALAR(val)                                                 \
@@ -32,19 +33,19 @@ const double kEpsSqrt{std::sqrt(kEps)};
 
 template <int dim>
 using Vec = Eigen::Vector<double, dim>;
-typedef Eigen::Vector3d Vec3;
-typedef Eigen::Vector4d Vec4;
+using Vec3 = Eigen::Vector3d;
+using Vec4 = Eigen::Vector4d;
 
 template <int row, int col>
 using Mat = Eigen::Matrix<double, row, col>;
-typedef Eigen::Matrix3d Mat3;
-typedef Eigen::Matrix4d Mat4;
+using Mat3 = Eigen::Matrix3d;
+using Mat4 = Eigen::Matrix4d;
 
-typedef Mat3 Rotation3;
-typedef Mat4 Transform3;
+using Rotation3 = Mat3;
+using Transform3 = Mat4;
 
-typedef Eigen::Quaterniond Quaternion;
+using Quaternion = Eigen::Quaterniond;
 
 }  // namespace dsf
 
-#endif  // DSF_PRECOMPILED_H_
+#endif  // DGD_BENCHMARK_DSF_PRECOMPILED_H_

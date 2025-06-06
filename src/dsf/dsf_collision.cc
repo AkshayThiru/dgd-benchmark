@@ -1,6 +1,9 @@
-#include "dsf/dsf_collision.h"
+#include "dgd_benchmark/dsf/dsf_collision.h"
 
 #include <cmath>
+
+#include "dgd_benchmark/dsf/dsf.h"
+#include "dgd_benchmark/dsf/precompiled.h"
 
 namespace dsf {
 
@@ -16,19 +19,19 @@ inline void DcfImpDiff(DSF* dsf1, const Vec3& pos1, const Rotation3& R1,
   dsf1->SupportFunction(var.head<3>(), pos1, R1, s1, ds1dx, ds1dq);
   dsf2->SupportFunction(-var.head<3>(), pos2, R2, s2, ds2dx, ds2dq);
 
-  const Vec3 q_bar{pos1 - pos2};
+  const Vec3 q_bar = pos1 - pos2;
   Mat4 dedvar;
   dedvar.block<3, 3>(0, 0) = var(3) * (ds1dx + ds2dx);
   dedvar.block<3, 1>(0, 3) = s1 - s2 - q_bar;
   dedvar.block<1, 3>(3, 0) = 2.0 * var.head<3>().transpose();
   dedvar(3, 3) = 0.0;
-  Mat<4, 12> dedq{Mat<4, 12>::Zero()};
+  Mat<4, 12> dedq = Mat<4, 12>::Zero();
   dedq.block<3, 6>(0, 0) = var(3) * ds1dq;
   dedq.block<3, 3>(0, 0) += (1.0 - var(3)) * Mat3::Identity();
   dedq.block<3, 6>(0, 6) = -var(3) * ds2dq;
   dedq.block<3, 3>(0, 6) -= (1.0 - var(3)) * Mat3::Identity();
-  const Mat<3, 12> dxdq{
-      -(dedvar.colPivHouseholderQr().solve(dedq).topRows<3>())};
+  const Mat<3, 12> dxdq =
+      -(dedvar.colPivHouseholderQr().solve(dedq).topRows<3>());
 
   dcf.p1 = s1;
   dcf.p2 = s2;
@@ -40,13 +43,13 @@ inline void DcfImpDiff(DSF* dsf1, const Vec3& pos1, const Rotation3& R1,
   dcf.dnormal = (Mat3::Identity() - dcf.normal * dcf.normal.transpose()) * dxdq;
 #ifdef DSF_SIGNED_DISTANCE
   // Signed distance.
-  const double sign{var(3) > 1.0 ? 1.0 : -1.0};
+  const double sign = var(3) > 1.0 ? 1.0 : -1.0;
   dcf.gap = sign * (s1 - s2).norm();
   dcf.dgap = sign * (s1 - s2).normalized().transpose() * (dcf.dp1 - dcf.dp2);
 #else
   // Growth distance.
-  const Vec3 sp{s1 - s2 - q_bar};
-  const double spnorm{sp.norm()}, q_barnorm{q_bar.norm()};
+  const Vec3 sp = s1 - s2 - q_bar;
+  const double spnorm = sp.norm(), q_barnorm = q_bar.norm();
   dcf.gap = q_barnorm / spnorm;
   dcf.dgap.setZero();
   dcf.dgap.leftCols<3>() =
@@ -60,12 +63,12 @@ inline void DcfImpDiff(DSF* dsf1, const Vec3& pos1, const Rotation3& R1,
 }  // namespace
 
 double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
-                      const Transform3& tf2, Output& out,
-                      const Settings& settings) {
-  const Vec3 pos1{tf1.block<3, 1>(0, 3)}, pos2{tf2.block<3, 1>(0, 3)};
-  const Rotation3 R1{tf1.block<3, 3>(0, 0)}, R2{tf2.block<3, 3>(0, 0)};
+                      const Transform3& tf2, const Settings& settings,
+                      Output& out) {
+  const Vec3 pos1 = tf1.block<3, 1>(0, 3), pos2 = tf2.block<3, 1>(0, 3);
+  const Rotation3 R1 = tf1.block<3, 3>(0, 0), R2 = tf2.block<3, 3>(0, 0);
 
-  const Vec3 q_bar{pos1 - pos2};
+  const Vec3 q_bar = pos1 - pos2;
 
   // Check if the centers are coincident.
   if (q_bar.norm() < settings.min_center_dist) {
@@ -80,7 +83,7 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
   Mat3 W_sim, Winv_sim;
   Vec3 c_sim, x;
   Mat<3, 4> V_sim;
-  const double small{1e-3};
+  const double small = 1e-3;
   V_sim.col(0) = small * Vec3(1.0, 0.0, -0.5);
   V_sim.col(1) = small * Vec3(-0.5, 0.5, -0.5);
   V_sim.col(2) = small * Vec3(-0.5, -0.5, -0.5);
@@ -161,19 +164,27 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
 
 SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
                                    const Transform3& tf2, Output& out) {
-  const Vec3 pos1{tf1.block<3, 1>(0, 3)}, pos2{tf2.block<3, 1>(0, 3)};
-  const Rotation3 R1{tf1.block<3, 3>(0, 0)}, R2{tf2.block<3, 3>(0, 0)};
-  const DCF& dcf{out.dcf};
-  const Vec3 normal{dcf.normal}, q_bar{pos1 - pos2};
+  SolutionError err = SolutionError{};
+  if (out.status == SolutionStatus::CoincidentCenters) {
+    err.prim_dual_gap = err.prim_feas_err = 0.0;
+    return err;
+  } else if (out.status != SolutionStatus::Optimal) {
+    err.prim_dual_gap = err.prim_feas_err = kInf;
+    return err;
+  }
+
+  const Vec3 pos1 = tf1.block<3, 1>(0, 3), pos2 = tf2.block<3, 1>(0, 3);
+  const Rotation3 R1 = tf1.block<3, 3>(0, 0), R2 = tf2.block<3, 3>(0, 0);
+  const DCF& dcf = out.dcf;
+  const Vec3 normal = dcf.normal, q_bar = pos1 - pos2;
 
   Vec3 s1, s2;
   dsf1->SupportFunction(normal, pos1, R1, s1);
   dsf2->SupportFunction(-normal, pos2, R2, s2);
-  const double sv1{(s1 - pos1).dot(normal)}, sv2{(s2 - pos2).dot(-normal)};
-  const double gap_prim{q_bar.norm() / (s1 - s2 - q_bar).norm()};
-  const double gap_dual{-q_bar.dot(normal) / (sv1 + sv2)};
+  const double sv1 = (s1 - pos1).dot(normal), sv2 = (s2 - pos2).dot(-normal);
+  const double gap_prim = q_bar.norm() / (s1 - s2 - q_bar).norm();
+  const double gap_dual = -q_bar.dot(normal) / (sv1 + sv2);
 
-  SolutionError err = SolutionError{};
   err.prim_dual_gap = std::abs(gap_prim / gap_dual - 1.0);
   err.prim_feas_err = (q_bar + dcf.gap * (dcf.p1 - dcf.p2 - q_bar)).norm();
   return err;

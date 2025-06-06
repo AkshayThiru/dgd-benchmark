@@ -1,35 +1,34 @@
-#include <dgd/data_types.h>
-#include <dgd/geometry/3d/cone.h>
-#include <dgd/geometry/3d/mesh.h>
-#include <dgd/mesh_loader.h>
-#include <dgd/utils.h>
-
 #include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "ie/internal_expanding.h"
+#include "dgd/data_types.h"
+#include "dgd/geometry/3d/cone.h"
+#include "dgd/geometry/3d/mesh.h"
+#include "dgd/mesh_loader.h"
+#include "dgd/utils.h"
+#include "dgd_benchmark/ie/internal_expanding.h"
 
 int main() {
   // Cone set.
-  const double ha{dgd::kPi / 6.0}, radius{1.0};
-  const double height{radius / std::tan(ha)};
+  const double ha = dgd::kPi / 6.0, radius = 1.0;
+  const double height = radius / std::tan(ha);
   dgd::ConvexSet<3>* set1 = new dgd::Cone(radius, height, 0.1);
 
   // Mesh set.
   dgd::MeshLoader ml{};
-  ml.LoadOBJ("../assets/rock_lowpoly.obj");
-  std::vector<dgd::Vec3f> vert;
+  ml.LoadObj("../assets/rock_lowpoly.obj");
+  std::vector<dgd::Vec3r> vert;
   std::vector<int> graph;
   ml.MakeVertexGraph(vert, graph);
-  dgd::Vec3f center;
-  const double inradius{ml.ComputeInradius(center)};
+  dgd::Vec3r center;
+  const double inradius = ml.ComputeInradius(center);
   for (auto& v : vert) v -= center;
   dgd::ConvexSet<3>* set2 = new dgd::Mesh(vert, graph, 0.1, inradius);
 
   // Rigid body transform.
-  dgd::Transform3f tf1, tf2;
+  dgd::Transform3r tf1, tf2;
   dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf1);
   dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
 

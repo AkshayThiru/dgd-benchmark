@@ -1,9 +1,11 @@
-#include "inc/incremental.h"
+#include "dgd_benchmark/inc/incremental.h"
 
+#include <array>
 #include <cassert>
 #include <iostream>
 
-#include "inc/polyhedron.h"
+#include "dgd_benchmark/inc/data_types.h"
+#include "dgd_benchmark/inc/polyhedron.h"
 
 #define PRINT_SUBALGORITHM(ep) std::cout << ep << std::endl;
 #define PRINT_GROWTH_DISTANCE std::cout << "sigma: " << res_(3) << std::endl;
@@ -36,10 +38,10 @@ inline int OtherFacetIdx(const std::array<int, 3>& fids, int fid, int& ofid1,
 
 inline int BestIdx(const Polyhedron* set, const Vec3& ray,
                    const std::array<int, 3>& fids, int nact) {
-  int fid{fids[0]};
+  int fid = fids[0];
 
   if (nact > 1) {
-    double val, max{set->Gamma()[fid].dot(ray)};
+    double val, max = set->Gamma()[fid].dot(ray);
     if ((val = set->Gamma()[fids[1]].dot(ray)) > max) {
       max = val;
       fid = fids[1];
@@ -79,10 +81,10 @@ inline std::ostream& operator<<(std::ostream& os, EntryPoint ep) {
 inline SolutionStatus GrowthDistanceSolver::Initialize(
     const Polyhedron* sets[2], int& iter) {
   // PRINT_SUBALGORITHM(EntryPoint::IZ)
-  const Vec3 p12{p_[0] - p_[1]};
+  const Vec3 p12 = p_[0] - p_[1];
 
-  const double rv1{sets[0]->RayCast(-R_[0].transpose() * p12, idx_sf_[0][0])};
-  const double rv2{sets[1]->RayCast(R_[1].transpose() * p12, idx_sf_[1][0])};
+  const double rv1 = sets[0]->RayCast(-R_[0].transpose() * p12, idx_sf_[0][0]);
+  const double rv2 = sets[1]->RayCast(R_[1].transpose() * p12, idx_sf_[1][0]);
   nact_[0] = nact_[1] = 1;
   idx_lp_[0] = {idx_sf_[0][0], 0};
   idx_lp_[1] = {idx_sf_[1][0], 1};
@@ -132,8 +134,8 @@ inline SolutionStatus GrowthDistanceSolver::FaceFaceDescent(
 inline SolutionStatus GrowthDistanceSolver::FaceEdgeDescent(
     const Polyhedron* sets[2], int& iter) {
   // PRINT_SUBALGORITHM(EntryPoint::FED);
-  const int sn{idx_lp_[2][1]};  // The set corresponding to the new facet.
-  const int snc{1 - sn};        // The other set.
+  const int sn = idx_lp_[2][1];  // The set corresponding to the new facet.
+  const int snc = 1 - sn;        // The other set.
   A_.block<3, 1>(0, 2) = R_[sn] * sets[sn]->Gamma()[idx_lp_[2][0]];
   if (!ls_.ComputeFaceEdgeGradient(A_, dx_)) {
     idx_lp_[3] = {-1, -1};
@@ -177,7 +179,7 @@ inline SolutionStatus GrowthDistanceSolver::FinalDescent(
     if (!ls_.ComputeFinalDual(A_, lambda_)) {
       return SolutionStatus::SingularityError;
     }
-    const double lambda_min{lambda_.minCoeff(&lpo)};
+    const double lambda_min = lambda_.minCoeff(&lpo);
     if (lambda_min >= settings_.lambda_min) {
       return SolutionStatus::Optimal;
     }
@@ -258,8 +260,8 @@ inline bool GrowthDistanceSolver::FeasibilityCheck(
 
 inline void GrowthDistanceSolver::FeasibilityRecovery(
     const Polyhedron* sets[2], std::array<bool, 2>& feas) {
-  double sigma[2]{res_(3), res_(3)};
-  int bfid[2]{-1, -1};
+  double sigma[2] = {res_(3), res_(3)};
+  int bfid[2] = {-1, -1};
   for (int s = 0; s < 2; ++s) {
     if (!feas[s]) {
       bfid[s] = BestIdx(sets[s], Rtx_p_[s], idx_sf_[s], nact_[s]);
@@ -268,18 +270,18 @@ inline void GrowthDistanceSolver::FeasibilityRecovery(
   }
 
   const int sgc = (sigma[0] < sigma[1]);
-  const int sg{1 - sgc};  // Set for which GlobalStepSize will be called.
+  const int sg = 1 - sgc;  // Set for which GlobalStepSize will be called.
   assert(bfid[sgc] != -1);
   assert(sigma[sgc] > res_(3));
   assert(nact_[sgc] < 3);
   res_(3) = sigma[sgc];
   dx_ = p_[sgc] - res_.head<3>();
-  const double mdsigma{
-      -sets[sgc]->Gamma()[bfid[sgc]].dot(R_[sgc].transpose() * dx_)};
+  const double mdsigma =
+      -sets[sgc]->Gamma()[bfid[sgc]].dot(R_[sgc].transpose() * dx_);
   dx_ /= mdsigma;
 
-  const double step{sets[sg]->GlobalStepSize(
-      Rtx_p_[sg], R_[sg].transpose() * dx_, res_(3), idx_sf_[sg][0], bfid[sg])};
+  const double step = sets[sg]->GlobalStepSize(
+      Rtx_p_[sg], R_[sg].transpose() * dx_, res_(3), idx_sf_[sg][0], bfid[sg]);
 
   idx_sf_[0][0] = bfid[0];
   idx_sf_[1][0] = bfid[1];
@@ -294,8 +296,8 @@ inline void GrowthDistanceSolver::FeasibilityRecovery(
 inline EntryPoint GrowthDistanceSolver::Incremental(const Polyhedron* sets[2],
                                                     int& iter) {
   assert((nact_[0] > 0) && (nact_[1] > 0));
-  const Vec3 p12{p_[0] - p_[1]};
-  const int nact{nact_[0] + nact_[1]};
+  const Vec3 p12 = p_[0] - p_[1];
+  const int nact = nact_[0] + nact_[1];
 
   auto best_idx = [this, &sets, &p12]() -> void {
     idx_sf_[0][0] =
@@ -337,7 +339,7 @@ inline void GrowthDistanceSolver::ComputeDualOptimalSolution(
   } else if (nact_[1] == 1) {
     normal_ = -R_[1] * sets[1]->Gamma()[idx_sf_[1][0]].normalized();
   } else {
-    Vec4 lambda1{Vec4::Zero()};
+    Vec4 lambda1 = Vec4::Zero();
     for (int i = 0; i < 4; ++i) {
       if (idx_lp_[i][1] == 0) lambda1(i) = lambda_(i);
     }

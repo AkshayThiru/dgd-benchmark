@@ -1,4 +1,9 @@
-#include "inc/polyhedron.h"
+#include "dgd_benchmark/inc/polyhedron.h"
+
+#include <cassert>
+#include <vector>
+
+#include "dgd_benchmark/inc/data_types.h"
 
 namespace inc {
 
@@ -18,7 +23,7 @@ void Polyhedron::SetPolyhedron(const std::vector<Vec3>& normal,
   for (int i = 0; i < nfacet_ - 1; ++i) {
     degree_[i] = graph[2 + i + 1] - graph[2 + i] - 1;
   }
-  const int nridge{graph[1]};
+  const int nridge = graph[1];
   degree_[nfacet_ - 1] = nfacet_ + 2 * nridge - graph[2 + nfacet_ - 1] - 1;
 
   graph_ = graph;

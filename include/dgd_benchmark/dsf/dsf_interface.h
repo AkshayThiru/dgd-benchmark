@@ -1,18 +1,17 @@
-#ifndef DSF_DSF_INTERFACE_H_
-#define DSF_DSF_INTERFACE_H_
-
-#include <dgd/geometry/convex_set.h>
+#ifndef DGD_BENCHMARK_DSF_DSF_INTERFACE_H_
+#define DGD_BENCHMARK_DSF_DSF_INTERFACE_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "dsf/dsf.h"
+#include "dgd/geometry/convex_set.h"
+#include "dgd_benchmark/dsf/dsf.h"
 
 namespace dsf {
 
 // Load mesh object from file and return vertices and inradius.
-double LoadOBJ(const std::string& file, std::vector<Vec3>& vert);
+double LoadObj(const std::string& file, std::vector<Vec3>& vert);
 
 // DSF interface class.
 template <int exp>
@@ -64,4 +63,4 @@ inline VDSF<exp>* VDSFInterface<exp>::VDSFPtr() const {
 
 }  // namespace dsf
 
-#endif  // DSF_DSF_INTERFACE_H_
+#endif  // DGD_BENCHMARK_DSF_DSF_INTERFACE_H_

@@ -1,19 +1,19 @@
-#ifndef DSF_DSF_COLLISION_H_
-#define DSF_DSF_COLLISION_H_
+#ifndef DGD_BENCHMARK_DSF_DSF_COLLISION_H_
+#define DGD_BENCHMARK_DSF_DSF_COLLISION_H_
 
 #include <cstdint>
 
-#include "dsf/dsf.h"
-#include "dsf/precompiled.h"
-#include "dsf/utils.h"
+#include "dgd_benchmark/dsf/dsf.h"
+#include "dgd_benchmark/dsf/precompiled.h"
+#include "dgd_benchmark/dsf/utils.h"
 
 namespace dsf {
 
 // Solver settings.
 struct Settings {
-  int max_iter{50};
-  double min_center_dist{kEpsSqrt};
-  double tol{kEpsSqrt};
+  int max_iter = 50;
+  double min_center_dist = kSqrtEps;
+  double tol = kSqrtEps;
 };
 
 // Differentiable contact feature.
@@ -37,29 +37,29 @@ enum class SolutionStatus : uint8_t {
 // Solver output.
 struct Output {
   DCF dcf;
-  int iter{0};
-  SolutionStatus status{SolutionStatus::MaxIterReached};
+  int iter = 0;
+  SolutionStatus status = SolutionStatus::MaxIterReached;
 };
 
 // Computes the growth distance.
 double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
-                      const Transform3& tf2, Output& out,
-                      const Settings& settings);
+                      const Transform3& tf2, const Settings& settings,
+                      Output& out);
 
 inline double GrowthDistance(DSF* dsf1, const Vec<7>& tfq1, DSF* dsf2,
-                             const Vec<7>& tfq2, Output& out,
-                             const Settings& settings) {
+                             const Vec<7>& tfq2, const Settings& settings,
+                             Output& out) {
   Transform3 tf1, tf2;
   Quaternion2RotationSe3(tfq1, tf1);
   Quaternion2RotationSe3(tfq2, tf2);
-  return GrowthDistance(dsf1, tf1, dsf2, tf2, out, settings);
+  return GrowthDistance(dsf1, tf1, dsf2, tf2, settings, out);
 }
 
 // Solution error.
 struct SolutionError {
   double prim_dual_gap;
   double prim_feas_err;
-  double dual_feas_err{0.0};
+  double dual_feas_err = 0.0;
 };
 
 SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
@@ -67,4 +67,4 @@ SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
 
 }  // namespace dsf
 
-#endif  // DSF_DSF_COLLISION_H_
+#endif  // DGD_BENCHMARK_DSF_DSF_COLLISION_H_

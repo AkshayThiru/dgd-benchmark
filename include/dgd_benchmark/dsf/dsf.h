@@ -1,12 +1,12 @@
-#ifndef DSF_DSF_H_
-#define DSF_DSF_H_
+#ifndef DGD_BENCHMARK_DSF_DSF_H_
+#define DGD_BENCHMARK_DSF_DSF_H_
 
 #include <cmath>
 #include <cstddef>
 #include <vector>
 
-#include "dsf/precompiled.h"
-#include "dsf/utils.h"
+#include "dgd_benchmark/dsf/precompiled.h"
+#include "dgd_benchmark/dsf/utils.h"
 
 namespace dsf {
 
@@ -50,8 +50,8 @@ class VDSF : public DSF {
 
   void SupportFunction(const Vec3& x, const Vec3& pos, const Rotation3& R,
                        Vec3& s) final override {
-    const Vec3 xt{R.transpose() * x};
-    double max_vx{0.0};
+    const Vec3 xt = R.transpose() * x;
+    double max_vx = 0.0;
     for (std::size_t i = 0; i < nvert_; ++i) {
       vx_[i] = std::max(vert_[i].dot(xt), 0.0);
       max_vx = std::max(max_vx, vx_[i]);
@@ -59,8 +59,8 @@ class VDSF : public DSF {
 
     s.setZero();
     double rvx, powa;
-    const double max_vxi{1.0 / max_vx};
-    double powa_sum{0.0};
+    const double max_vxi = 1.0 / max_vx;
+    double powa_sum = 0.0;
     for (size_t i = 0; i < nvert_; ++i) {
       rvx = vx_[i] * max_vxi;
       if (rvx > kThresh) {
@@ -69,16 +69,16 @@ class VDSF : public DSF {
         powa_sum += rvx * powa;
       }
     }
-    double h{std::pow(powa_sum, 1.0 / exp)};
-    double h2{h / powa_sum};
+    double h = std::pow(powa_sum, 1.0 / exp);
+    double h2 = h / powa_sum;
     s *= h2;
     s = pos + R * s;
   }
 
   void SupportFunction(const Vec3& x, const Vec3& pos, const Rotation3& R,
                        Vec3& s, Mat3& dsdx) final override {
-    const Vec3 xt{R.transpose() * x};
-    double max_vx{0.0};
+    const Vec3 xt = R.transpose() * x;
+    double max_vx = 0.0;
     for (std::size_t i = 0; i < nvert_; ++i) {
       vx_[i] = std::max(vert_[i].dot(xt), 0.0);
       max_vx = std::max(max_vx, vx_[i]);
@@ -87,8 +87,8 @@ class VDSF : public DSF {
     s.setZero();
     dsdx.setZero();
     double rvx, powa, powa2;
-    const double max_vxi{1.0 / max_vx};
-    double powa_sum{0.0};
+    const double max_vxi = 1.0 / max_vx;
+    double powa_sum = 0.0;
     for (std::size_t i = 0; i < nvert_; ++i) {
       rvx = vx_[i] * max_vxi;
       if (rvx > kThresh) {
@@ -99,8 +99,8 @@ class VDSF : public DSF {
         powa_sum += rvx * powa;
       }
     }
-    double h{std::pow(powa_sum, 1.0 / exp)};
-    double h2{h / powa_sum};
+    double h = std::pow(powa_sum, 1.0 / exp);
+    double h2 = h / powa_sum;
     s *= h2;
     dsdx = ((exp - 1) * h2 * max_vxi) * dsdx;
     dsdx -= ((exp - 1) / (h * max_vx)) * s * s.transpose();
@@ -131,9 +131,9 @@ class VDSF : public DSF {
   std::vector<double> vx_;
   const std::size_t nvert_;
 
-  static constexpr double kThresh{0.1};
+  static constexpr double kThresh = 0.1;
 };
 
 }  // namespace dsf
 
-#endif  // DSF_DSF_H_
+#endif  // DGD_BENCHMARK_DSF_DSF_H_

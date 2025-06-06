@@ -1,11 +1,11 @@
-#ifndef INC_POLYHEDRON_H_
-#define INC_POLYHEDRON_H_
+#ifndef DGD_BENCHMARK_INC_POLYHEDRON_H_
+#define DGD_BENCHMARK_INC_POLYHEDRON_H_
 
 #include <cassert>
 #include <cmath>
 #include <vector>
 
-#include "inc/data_types.h"
+#include "dgd_benchmark/inc/data_types.h"
 
 namespace inc {
 
@@ -81,16 +81,16 @@ inline Polyhedron::Polyhedron(const std::vector<Vec3>& normal,
 inline int Polyhedron::NeighbourIndex(int fid, int nfid) const {
   assert((fid >= 0) && (fid < nfacet_));
   const auto adr = fnid_adr_ + *(fnid_off_ + fid);
-  for (int id, i{0}; (id = *(adr + i)) != -1; ++i) {
+  for (int id, i = 0; (id = *(adr + i)) != -1; ++i) {
     if (id == nfid) return i;
   }
   return -1;
 }
 
 inline double Polyhedron::RayCast(const Vec3& ray, int& fid) const {
-  double val, max{gamma_[fid].dot(ray)};
+  double val, max = gamma_[fid].dot(ray);
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
-  int id{*adr};
+  int id = *adr;
   do {
     val = gamma_[id].dot(ray);
     if (val > max) {
@@ -112,8 +112,8 @@ inline double Polyhedron::LocalFaceStepSize(const Vec3& x, const Vec3& dx,
   assert((fid >= 0) && (fid < nfacet_));
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
   Vec3 gamma;
-  double den, num, val, min{kInf};
-  int id{*adr};
+  double den, num, val, min = kInf;
+  int id = *adr;
   do {
     if constexpr (skip_neighbour) {
       if (id == nfid_) continue;
@@ -151,8 +151,8 @@ inline double Polyhedron::GlobalStepSize(const Vec3& x, const Vec3& dx,
   assert((fid >= 0) && (fid < nfacet_));
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
   Vec3 gamma;
-  double den, num, val, min{kInf};
-  int id{*adr};
+  double den, num, val, min = kInf;
+  int id = *adr;
   do {
     // if (id == fid) {  // Not required.
     //   ++adr;
@@ -183,7 +183,7 @@ inline bool Polyhedron::LocalFaceFeasible(const Vec3& x, double sigma, int fid,
                                           int nfid_) const {
   assert((fid >= 0) && (fid < nfacet_));
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
-  int id{*adr};
+  int id = *adr;
   do {
     if constexpr (skip_neighbour) {
       if (id == nfid_) continue;
@@ -210,4 +210,4 @@ inline int Polyhedron::nfacet() const { return nfacet_; }
 
 }  // namespace inc
 
-#endif  // INC_POLYHEDRON_H_
+#endif  // DGD_BENCHMARK_INC_POLYHEDRON_H_

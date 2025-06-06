@@ -1,19 +1,18 @@
-#include <dgd/utils.h>
-
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "dsf/dsf_collision.h"
-#include "dsf/dsf_interface.h"
+#include "dgd/utils.h"
+#include "dgd_benchmark/dsf/dsf_collision.h"
+#include "dgd_benchmark/dsf/dsf_interface.h"
 
 int main() {
   // Mesh sets.
   std::vector<dsf::Vec3> vert;
-  double inradius, margin{0.0};
-  constexpr unsigned int exp{16};
+  double inradius, margin = 0.0;
+  constexpr unsigned int exp = 16;
 
-  inradius = dsf::LoadOBJ("../assets/rock_lowpoly.obj", vert);
+  inradius = dsf::LoadObj("../assets/rock_lowpoly.obj", vert);
 
   auto set1 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
   auto set2 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
@@ -28,8 +27,8 @@ int main() {
   // Growth distance.
   const dsf::Settings settings{};
   dsf::Output out{};
-  double gd{dsf::GrowthDistance(set1->VDSFPtr(), tf1, set2->VDSFPtr(), tf2, out,
-                                settings)};
+  double gd = dsf::GrowthDistance(set1->VDSFPtr(), tf1, set2->VDSFPtr(), tf2,
+                                  settings, out);
   auto err = dsf::ComputeSolutionError(set1->VDSFPtr(), tf1, set2->VDSFPtr(),
                                        tf2, out);
 

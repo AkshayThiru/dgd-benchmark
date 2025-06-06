@@ -1,7 +1,7 @@
-#ifndef DSF_UTILS_H_
-#define DSF_UTILS_H_
+#ifndef DGD_BENCHMARK_DSF_UTILS_H_
+#define DGD_BENCHMARK_DSF_UTILS_H_
 
-#include "dsf/precompiled.h"
+#include "dgd_benchmark/dsf/precompiled.h"
 
 namespace dsf {
 
@@ -20,7 +20,7 @@ inline void Skew(const Vec3& w, Mat3& W) {
 // Exponentiation function
 template <unsigned int exp>
 inline double Power(double base) {
-  const double half_power{Power<exp / 2>(base)};
+  const double half_power = Power<exp / 2>(base);
   if constexpr (exp % 2 == 0) {
     return half_power * half_power;
   } else {
@@ -40,4 +40,4 @@ inline double Power<1>(double base) {
 
 }  // namespace dsf
 
-#endif  // DSF_UTILS_H_
+#endif  // DGD_BENCHMARK_DSF_UTILS_H_

@@ -1,24 +1,23 @@
-#include <dgd/geometry/3d/mesh.h>
-#include <dgd/mesh_loader.h>
-#include <dgd/utils.h>
-
 #include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "inc/data_types.h"
-#include "inc/incremental.h"
-#include "inc/polyhedron.h"
-#include "inc/solution_error.h"
+#include "dgd/geometry/3d/mesh.h"
+#include "dgd/mesh_loader.h"
+#include "dgd/utils.h"
+#include "dgd_benchmark/inc/data_types.h"
+#include "dgd_benchmark/inc/incremental.h"
+#include "dgd_benchmark/inc/polyhedron.h"
+#include "dgd_benchmark/inc/solution_error.h"
 
 namespace {
 
 void GetConvexSets(const std::string& file, inc::Polyhedron*& seth,
                    dgd::Mesh*& setv) {
   dgd::MeshLoader ml{};
-  ml.LoadOBJ(file);
+  ml.LoadObj(file);
 
   // Construct halfspace set.
   std::vector<inc::Vec3> vec;
@@ -32,7 +31,7 @@ void GetConvexSets(const std::string& file, inc::Polyhedron*& seth,
   seth = new inc::Polyhedron(vec, offset, graph);
 
   // Construct vertex set.
-  const double inradius{ml.ComputeInradius(vec, offset, inc::Vec3::Zero())};
+  const double inradius = ml.ComputeInradius(vec, offset, inc::Vec3::Zero());
   vec.clear();
   graph.clear();
   ml.MakeVertexGraph(vec, graph);
@@ -47,7 +46,9 @@ int main() {
   inc::Polyhedron *set1, *set2;
   dgd::Mesh *mesh1, *mesh2;
   GetConvexSets("../assets/rock_lowpoly.obj", set1, mesh1);
-  GetConvexSets("../assets/006_mustard_bottle.obj", set2, mesh2);
+  // GetConvexSets("../assets/006_mustard_bottle.obj", set2, mesh2);
+  set2 = set1;
+  mesh2 = mesh1;
 
   // Rigid bosy transforms.
   inc::Transform3 tf1, tf2;
@@ -55,20 +56,20 @@ int main() {
   inc::Rotation3 dR;
 
   // Growth distance.
-  const int ncold{100};
-  const int nwarm{999};
-  const double dt{0.1};
-  int niter_cold{0}, niter_warm{0};
+  const int ncold = 100;
+  const int nwarm = 999;
+  const double dt = 0.1;
+  int niter_cold = 0, niter_warm = 0;
 
   inc::GrowthDistanceSolver solver{};
   inc::Output out{};
   inc::SolutionError err;
-  double max_gap{0.0};
+  double max_gap = 0.0;
   for (int i = 0; i < ncold; ++i) {
     dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf1);
     dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
-    v = dgd::Vec3f::Random();
-    euler = dgd::Vec3f::Random() * dgd::kPi / 2.0 * dt;
+    v = dgd::Vec3r::Random();
+    euler = dgd::Vec3r::Random() * dgd::kPi / 2.0 * dt;
     dgd::EulerToRotation(euler, dR);
     for (int j = 0; j < nwarm + 1; ++j) {
       solver.GrowthDistance(set1, tf1, set2, tf2, out, (j > 0));
@@ -84,8 +85,8 @@ int main() {
     }
   }
 
-  const double avg_iter_cold{(1.0 * niter_cold) / ncold};
-  const double avg_iter_warm{(1.0 * niter_warm) / (ncold * nwarm)};
+  const double avg_iter_cold = (1.0 * niter_cold) / ncold;
+  const double avg_iter_warm = (1.0 * niter_warm) / (ncold * nwarm);
   std::cout << "Maximum primal-dual gap: " << max_gap << std::endl
             << "Avg. iterations (cold) : " << avg_iter_cold << std::endl
             << "Avg. iterations (warm) : " << avg_iter_warm << std::endl;

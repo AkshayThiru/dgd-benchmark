@@ -1,12 +1,12 @@
-#ifndef INC_INCREMENTAL_H_
-#define INC_INCREMENTAL_H_
+#ifndef DGD_BENCHMARK_INC_INCREMENTAL_H_
+#define DGD_BENCHMARK_INC_INCREMENTAL_H_
 
 #include <Eigen/Dense>
 #include <array>
 #include <cstdint>
 
-#include "inc/data_types.h"
-#include "inc/linear_solver.h"
+#include "dgd_benchmark/inc/data_types.h"
+#include "dgd_benchmark/inc/linear_solver.h"
 
 namespace inc {
 
@@ -15,14 +15,14 @@ class Polyhedron;
 template <int outer, int inner>
 using MdArray = std::array<std::array<int, inner>, outer>;
 
-const double kLsTol{kEps};  // Linear solver tolerance.
+const double kLsTol = kEps;  // Linear solver tolerance.
 
 // Solver settings.
 struct Settings {
-  double min_center_dist{kEpsSqrt};
-  double lambda_min{-kEps};
-  int max_iter{1000};
-  bool lp_act_cons_inv{false};
+  double min_center_dist = kSqrtEps;
+  double lambda_min = -kEps;
+  int max_iter = 1000;
+  bool lp_act_cons_inv = false;
 };
 
 // Algorithm entry point.
@@ -45,13 +45,13 @@ enum class SolutionStatus : uint8_t {
 // Solver output.
 struct Output {
   // normal points along p2 - p1.
-  Vec3 normal{Vec3::Zero()};
-  Vec3 z1{Vec3::Zero()};
-  Vec3 z2{Vec3::Zero()};
-  double growth_dist{0.0};
+  Vec3 normal = Vec3::Zero();
+  Vec3 z1 = Vec3::Zero();
+  Vec3 z2 = Vec3::Zero();
+  double growth_dist = 0.0;
 
-  int iter{0};
-  SolutionStatus status{SolutionStatus::MaxIterReached};
+  int iter = 0;
+  SolutionStatus status = SolutionStatus::MaxIterReached;
 };
 
 // Growth distance solver.
@@ -144,4 +144,4 @@ inline void GrowthDistanceSolver::UpdateLocalXDx() {
 
 }  // namespace inc
 
-#endif  // INC_INCREMENTAL_H_
+#endif  // DGD_BENCHMARK_INC_INCREMENTAL_H_
