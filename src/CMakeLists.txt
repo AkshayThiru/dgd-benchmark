@@ -8,25 +8,34 @@ set(INC_SOURCES
   "${PROJECT_SOURCE_DIR}/src/inc/polyhedron.cc"
 )
 
-# Benchmark library
-add_library(bench STATIC
-  ${DSF_SOURCES}
-  ${INC_SOURCES}
+set(BENCHMARK_SOURCES
+  "${PROJECT_SOURCE_DIR}/src/benchmark_interface.cc"
+  "${PROJECT_SOURCE_DIR}/src/convex_set_generator.cc"
+  "${PROJECT_SOURCE_DIR}/src/file_io.cc"
 )
 
-target_include_directories(bench
+
+# Benchmark library
+add_library(benchmark STATIC
+  ${DSF_SOURCES}
+  ${INC_SOURCES}
+  ${BENCHMARK_SOURCES}
+)
+
+target_include_directories(benchmark
   PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
 )
-target_link_libraries(bench
+target_link_libraries(benchmark
   PUBLIC
     Eigen3::Eigen
     dgd::dgd
+    Arrow::arrow_shared
 )
 
-target_compile_features(bench PUBLIC cxx_std_17)
-set_target_properties(bench PROPERTIES CXX_EXTENSIONS OFF)
-target_compile_options(bench
+target_compile_features(benchmark PUBLIC cxx_std_17)
+set_target_properties(benchmark PROPERTIES CXX_EXTENSIONS OFF)
+target_compile_options(benchmark
   PUBLIC
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     $<$<CONFIG:Debug>:-O0 -g>
@@ -34,11 +43,11 @@ target_compile_options(bench
 )
 
 if (DSF_SIGNED_DISTANCE)
-  target_compile_definitions(bench PRIVATE DSF_SIGNED_DISTANCE)
+  target_compile_definitions(benchmark PRIVATE DSF_SIGNED_DISTANCE)
 endif()
 if (IE_SMALL_SIMPLEX)
-  target_compile_definitions(bench PRIVATE IE_SMALL_SIMPLEX)
+  target_compile_definitions(benchmark PRIVATE IE_SMALL_SIMPLEX)
 endif()
 if (IE_DISTANCE_TC)
-  target_compile_definitions(bench PRIVATE IE_DISTANCE_TC)
+  target_compile_definitions(benchmark PRIVATE IE_DISTANCE_TC)
 endif()
