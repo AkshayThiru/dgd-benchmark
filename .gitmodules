@@ -4,3 +4,4 @@
 [submodule "extern/differentiable-growth-distance"]
 	path = extern/differentiable-growth-distance
 	url = https://github.com/AkshayThiru/differentiable-growth-distance.git
+	branch = main
