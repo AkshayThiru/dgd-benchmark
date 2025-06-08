@@ -1,7 +1,7 @@
 #ifndef DGD_BENCHMARK_DSF_UTILS_H_
 #define DGD_BENCHMARK_DSF_UTILS_H_
 
-#include "dgd_benchmark/dsf/precompiled.h"
+#include "dsf/precompiled.h"
 
 namespace dsf {
 

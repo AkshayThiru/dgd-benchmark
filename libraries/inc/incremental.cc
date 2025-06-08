@@ -1,11 +1,11 @@
-#include "dgd_benchmark/inc/incremental.h"
+#include "inc/incremental.h"
 
 #include <array>
 #include <cassert>
 #include <iostream>
 
-#include "dgd_benchmark/inc/data_types.h"
-#include "dgd_benchmark/inc/polyhedron.h"
+#include "inc/data_types.h"
+#include "inc/polyhedron.h"
 
 #define PRINT_SUBALGORITHM(ep) std::cout << ep << std::endl;
 #define PRINT_GROWTH_DISTANCE std::cout << "sigma: " << res_(3) << std::endl;

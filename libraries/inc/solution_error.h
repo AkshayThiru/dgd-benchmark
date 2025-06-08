@@ -4,8 +4,8 @@
 #include <cmath>
 
 #include "dgd/geometry/convex_set.h"
-#include "dgd_benchmark/inc/data_types.h"
-#include "dgd_benchmark/inc/incremental.h"
+#include "inc/data_types.h"
+#include "inc/incremental.h"
 
 namespace inc {
 

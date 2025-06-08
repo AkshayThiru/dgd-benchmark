@@ -18,22 +18,24 @@ option(BENCHMARK_BUILD_TESTS "Build tests" ON)
 
 
 # Dependencies
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Eigen3 3.4.90 REQUIRED NO_MODULE)
-find_package(Qhull REQUIRED)
-find_package(dgd 1.0.0 REQUIRED)
 find_package(Arrow REQUIRED) # For data storage
 
-# Benchmark library
-add_subdirectory(src)
+set(DGD_LIB dgd)
+add_subdirectory(extern/differentiable-growth-distance)
+add_subdirectory(extern/differentiable-growth-distance/benchmarks/internal_helpers)
 
+# Benchmark libraries
+add_subdirectory(libraries/dsf)
+add_subdirectory(libraries/ie)
+add_subdirectory(libraries/inc)
 
 # Tests
 if (BENCHMARK_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
-
 
 # Benchmarks
 add_subdirectory(benchmarks)

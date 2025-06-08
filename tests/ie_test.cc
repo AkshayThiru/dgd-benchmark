@@ -8,7 +8,7 @@
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/mesh_loader.h"
 #include "dgd/utils.h"
-#include "dgd_benchmark/ie/internal_expanding.h"
+#include "ie/internal_expanding.h"
 
 int main() {
   // Cone set.

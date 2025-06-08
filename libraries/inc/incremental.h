@@ -5,8 +5,8 @@
 #include <array>
 #include <cstdint>
 
-#include "dgd_benchmark/inc/data_types.h"
-#include "dgd_benchmark/inc/linear_solver.h"
+#include "inc/data_types.h"
+#include "inc/linear_solver.h"
 
 namespace inc {
 

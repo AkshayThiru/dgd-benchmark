@@ -7,10 +7,10 @@
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/mesh_loader.h"
 #include "dgd/utils.h"
-#include "dgd_benchmark/inc/data_types.h"
-#include "dgd_benchmark/inc/incremental.h"
-#include "dgd_benchmark/inc/polyhedron.h"
-#include "dgd_benchmark/inc/solution_error.h"
+#include "inc/data_types.h"
+#include "inc/incremental.h"
+#include "inc/polyhedron.h"
+#include "inc/solution_error.h"
 
 namespace {
 
@@ -46,9 +46,7 @@ int main() {
   inc::Polyhedron *set1, *set2;
   dgd::Mesh *mesh1, *mesh2;
   GetConvexSets("../assets/rock_lowpoly.obj", set1, mesh1);
-  // GetConvexSets("../assets/006_mustard_bottle.obj", set2, mesh2);
-  set2 = set1;
-  mesh2 = mesh1;
+  GetConvexSets("../assets/006_mustard_bottle.obj", set2, mesh2);
 
   // Rigid bosy transforms.
   inc::Transform3 tf1, tf2;

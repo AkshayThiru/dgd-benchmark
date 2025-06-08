@@ -5,8 +5,8 @@
 #include <cstddef>
 #include <vector>
 
-#include "dgd_benchmark/dsf/precompiled.h"
-#include "dgd_benchmark/dsf/utils.h"
+#include "dsf/precompiled.h"
+#include "dsf/utils.h"
 
 namespace dsf {
 

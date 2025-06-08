@@ -3,9 +3,9 @@
 
 #include <cstdint>
 
-#include "dgd_benchmark/dsf/dsf.h"
-#include "dgd_benchmark/dsf/precompiled.h"
-#include "dgd_benchmark/dsf/utils.h"
+#include "dsf/dsf.h"
+#include "dsf/precompiled.h"
+#include "dsf/utils.h"
 
 namespace dsf {
 

@@ -1,4 +1,4 @@
-#include "dgd_benchmark/file_io.h"
+#include "helpers/benchmark_result.h"
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "dgd_benchmark/benchmark_result.h"
+namespace internal {
 
 namespace {
 
@@ -44,8 +44,8 @@ arrow::Result<std::shared_ptr<arrow::Array>> MakeBooleanArray(
   return array;
 }
 
-inline arrow::Status SaveBenchmarkOutputToFeather(
-    const BenchmarkResultArray& resa, const std::string& filename) {
+arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
+                                const std::string& filename) {
   std::shared_ptr<arrow::Schema> schema =
       arrow::schema({arrow::field("solve_time", arrow::float64()),
                      arrow::field("prim_dual_gap", arrow::float64()),
@@ -55,26 +55,26 @@ inline arrow::Status SaveBenchmarkOutputToFeather(
                      arrow::field("optimal", arrow::boolean())});
 
   std::shared_ptr<arrow::Array> solve_time_array;
-  ARROW_ASSIGN_OR_RAISE(solve_time_array, MakeDoubleArray(resa.solve_time));
+  ARROW_ASSIGN_OR_RAISE(solve_time_array, MakeDoubleArray(res_arr.solve_times));
 
   std::shared_ptr<arrow::Array> prim_dual_gap_array;
   ARROW_ASSIGN_OR_RAISE(prim_dual_gap_array,
-                        MakeDoubleArray(resa.prim_dual_gap));
+                        MakeDoubleArray(res_arr.prim_dual_gaps));
 
   std::shared_ptr<arrow::Array> prim_feas_err_array;
   ARROW_ASSIGN_OR_RAISE(prim_feas_err_array,
-                        MakeDoubleArray(resa.prim_feas_err));
+                        MakeDoubleArray(res_arr.prim_feas_errs));
 
   std::shared_ptr<arrow::Array> dual_feas_err_array;
   ARROW_ASSIGN_OR_RAISE(dual_feas_err_array,
-                        MakeDoubleArray(resa.dual_feas_err));
+                        MakeDoubleArray(res_arr.dual_feas_errs));
 
   std::shared_ptr<arrow::Array> iter_array;
-  ARROW_ASSIGN_OR_RAISE(iter_array, MakeInt32Array(resa.iter));
+  ARROW_ASSIGN_OR_RAISE(iter_array, MakeInt32Array(res_arr.iters));
 
   std::shared_ptr<arrow::Array> optimal_flag_array;
   ARROW_ASSIGN_OR_RAISE(optimal_flag_array,
-                        MakeBooleanArray(resa.optimal_flag));
+                        MakeBooleanArray(res_arr.optimal_flags));
 
   std::shared_ptr<arrow::Table> table{
       arrow::Table::Make(schema, {
@@ -97,14 +97,16 @@ inline arrow::Status SaveBenchmarkOutputToFeather(
 
 }  // namespace
 
-bool SaveBenchmarkOutputToFile(const BenchmarkResultArray& out,
-                               const std::string& filename) {
-  arrow::Status st{SaveBenchmarkOutputToFeather(out, filename)};
-  if (!st.ok()) {
-    std::cerr << "Failed to write Feather file: " << st.ToString() << std::endl;
+bool BenchmarkResultArray::SaveToFile(const std::string& filename) {
+  arrow::Status status = SaveToFeatherFile(*this, filename);
+  if (!status.ok()) {
+    std::cerr << "Failed to write Feather file: " << status.ToString()
+              << std::endl;
     return false;
   }
 
   std::cout << "Benchmark data written to: " << filename << std::endl;
   return true;
 }
+
+}  // namespace internal

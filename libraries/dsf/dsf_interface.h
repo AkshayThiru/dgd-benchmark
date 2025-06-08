@@ -6,12 +6,9 @@
 #include <vector>
 
 #include "dgd/geometry/convex_set.h"
-#include "dgd_benchmark/dsf/dsf.h"
+#include "dsf/dsf.h"
 
 namespace dsf {
-
-// Load mesh object from file and return vertices and inradius.
-double LoadObj(const std::string& file, std::vector<Vec3>& vert);
 
 // DSF interface class.
 template <int exp>

@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 
-#include "dgd_benchmark/inc/data_types.h"
+#include "inc/data_types.h"
 
 namespace inc {
 

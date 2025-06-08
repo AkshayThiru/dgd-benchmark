@@ -1,9 +1,9 @@
-#include "dgd_benchmark/inc/polyhedron.h"
+#include "inc/polyhedron.h"
 
 #include <cassert>
 #include <vector>
 
-#include "dgd_benchmark/inc/data_types.h"
+#include "inc/data_types.h"
 
 namespace inc {
 

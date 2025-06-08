@@ -1,9 +1,9 @@
-#include "dgd_benchmark/dsf/dsf_collision.h"
+#include "dsf/dsf_collision.h"
 
 #include <cmath>
 
-#include "dgd_benchmark/dsf/dsf.h"
-#include "dgd_benchmark/dsf/precompiled.h"
+#include "dsf/dsf.h"
+#include "dsf/precompiled.h"
 
 namespace dsf {
 

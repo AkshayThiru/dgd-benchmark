@@ -2,9 +2,24 @@
 #include <string>
 #include <vector>
 
+#include "dgd/mesh_loader.h"
 #include "dgd/utils.h"
-#include "dgd_benchmark/dsf/dsf_collision.h"
-#include "dgd_benchmark/dsf/dsf_interface.h"
+#include "dsf/dsf_collision.h"
+#include "dsf/dsf_interface.h"
+
+double LoadObj(std::string filename, std::vector<dsf::Vec3>& vert) {
+  dgd::MeshLoader ml{};
+  ml.LoadObj(filename);
+
+  vert.clear();
+  std::vector<int> graph;
+  const bool valid = ml.MakeVertexGraph(vert, graph);
+  if (!valid) throw std::runtime_error("Qhull error");
+  dsf::Vec3 center;
+  const double inradius = ml.ComputeInradius(center);
+  for (auto& v : vert) v -= center;
+  return inradius;
+}
 
 int main() {
   // Mesh sets.
@@ -12,7 +27,7 @@ int main() {
   double inradius, margin = 0.0;
   constexpr unsigned int exp = 16;
 
-  inradius = dsf::LoadObj("../assets/rock_lowpoly.obj", vert);
+  inradius = LoadObj("../assets/rock_lowpoly.obj", vert);
 
   auto set1 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
   auto set2 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
