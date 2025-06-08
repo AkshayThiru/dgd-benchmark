@@ -1,3 +1,6 @@
 [submodule "extern/Julia/DifferentiableCollisions"]
 	path = extern/DifferentiableCollisions
 	url = https://github.com/kevin-tracy/DifferentiableCollisions.jl
+[submodule "extern/differentiable-growth-distance"]
+	path = extern/differentiable-growth-distance
+	url = https://github.com/AkshayThiru/differentiable-growth-distance.git
