@@ -27,9 +27,9 @@ int main() {
   double inradius, margin = 0.0;
   constexpr unsigned int exp = 16;
 
-  inradius = LoadObj("../assets/rock_lowpoly.obj", vert);
-
+  inradius = LoadObj("../assets/006_mustard_bottle.obj", vert);
   auto set1 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
+  inradius = LoadObj("../assets/006_mustard_bottle.obj", vert);
   auto set2 = new dsf::VDSFInterface<exp>(vert, inradius, margin);
 
   set1->VDSFPtr()->PrintInfo();
@@ -40,7 +40,9 @@ int main() {
   dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
 
   // Growth distance.
-  const dsf::Settings settings{};
+  dsf::Settings settings{};
+  settings.ie_iter = 8;
+  settings.max_iter = 25;
   dsf::Output out{};
   double gd = dsf::GrowthDistance(set1->VDSFPtr(), tf1, set2->VDSFPtr(), tf2,
                                   settings, out);
@@ -51,7 +53,8 @@ int main() {
             << "Primal feasibility error: " << err.prim_feas_err << " m"
             << std::endl
             << "Dual feasibility error  : " << err.dual_feas_err << std::endl
-            << "Primal dual gap         : " << err.prim_dual_gap << std::endl;
+            << "Primal dual gap         : " << err.prim_dual_gap << std::endl
+            << "Iterations              : " << out.iter << std::endl;
 
   delete set1;
   delete set2;

@@ -10,6 +10,7 @@
 #include "dgd/settings.h"
 #include "dsf/dsf.h"
 #include "dsf/dsf_collision.h"
+#include "dsf/dsf_interface.h"
 #include "dsf/precompiled.h"
 #include "helpers/benchmark_result.h"
 #include "ie/internal_expanding.h"
@@ -32,11 +33,11 @@ struct OptimalSolution {
 // Interface class for calling distance functions and retrieving results.
 class BenchmarkInterface {
  public:
-  using DsfPtr = std::shared_ptr<dsf::DSF>;
+  static constexpr unsigned int kVdsfExp = 16;
+
+  using DsfPtr = std::shared_ptr<dsf::VDSFInterface<kVdsfExp>>;
   using PolyhedronPtr = std::shared_ptr<inc::Polyhedron>;
   using SetGeneratorPtr = std::shared_ptr<dgd::internal::ConvexSetGenerator>;
-
-  static constexpr int kVdsfExp = 16;
 
   explicit BenchmarkInterface(int ncold, int nwarm);
 
@@ -80,9 +81,19 @@ class BenchmarkInterface {
                     const dgd::Vec3r& dx, const dgd::Rotation3r& drot,
                     BenchmarkResultArray& res_arr);
 
+  void SetDefaultRngSeed() const;
+
+  int RandomMeshIndex() const;
+
+  const std::vector<DsfPtr>& vdsfs() const { return vdsfs_; }
+
+  const std::vector<PolyhedronPtr>& polyhedra() const { return polyhedra_; }
+
   int ncold() const { return ncold_; }
 
   int nwarm() const { return nwarm_; }
+
+  int nmeshes() const { return nmeshes_; }
 
  private:
   // Differential support function variables.

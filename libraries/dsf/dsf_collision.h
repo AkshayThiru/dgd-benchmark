@@ -11,9 +11,10 @@ namespace dsf {
 
 // Solver settings.
 struct Settings {
-  int max_iter = 50;
   double min_center_dist = kSqrtEps;
   double tol = kSqrtEps;
+  int max_iter = 10;
+  int ie_iter = 4;
 };
 
 // Differentiable contact feature.

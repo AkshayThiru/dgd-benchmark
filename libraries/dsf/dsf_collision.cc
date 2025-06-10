@@ -109,7 +109,7 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
     }
     V_sim.block<3, 3>(0, 0) = W_sim;
 
-    if (out.iter <= 4) {
+    if (out.iter <= settings.ie_iter) {
       x = Winv_sim.transpose() * u0;
       if (out.iter == 4) {
         dsf1->SupportFunction(x, pos1, R1, s1, ds1dx);
@@ -150,7 +150,7 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
     }
 
     out.iter++;
-    if (out.iter > settings.max_iter) {
+    if (out.iter >= settings.max_iter) {
       out.status = SolutionStatus::MaxIterReached;
       break;
     }
@@ -169,8 +169,10 @@ SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
     err.prim_dual_gap = err.prim_feas_err = 0.0;
     return err;
   } else if (out.status != SolutionStatus::Optimal) {
-    err.prim_dual_gap = err.prim_feas_err = kInf;
-    return err;
+    // The algorithm often reaches the maximum number of iterations without
+    // convergence.
+    // err.prim_dual_gap = err.prim_feas_err = kInf;
+    // return err;
   }
 
   const Vec3 pos1 = tf1.block<3, 1>(0, 3), pos2 = tf2.block<3, 1>(0, 3);

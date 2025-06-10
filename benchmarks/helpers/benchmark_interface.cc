@@ -6,6 +6,7 @@
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/growth_distance.h"
 #include "dgd/mesh_loader.h"
+#include "dgd/utils.h"
 #include "inc/solution_error.h"
 #include "internal_helpers/mesh_loader.h"
 
@@ -36,7 +37,8 @@ void BenchmarkInterface::LoadMeshesFromObjFiles(
   polyhedra_.resize(nmeshes_);
   dgd::internal::MeshProperties mp;
   for (int i = 0; i < nmeshes_; ++i) {
-    vdsfs_[i] = std::make_shared<dsf::VDSF<kVdsfExp>>(meshes[i]->vertices());
+    vdsfs_[i] = std::make_shared<dsf::VDSFInterface<kVdsfExp>>(
+        meshes[i]->vertices(), meshes[i]->inradius(), 0.0);
     dgd::internal::SetFacetMeshFromVertices(meshes[i]->vertices(), mp);
     polyhedra_[i] =
         std::make_shared<inc::Polyhedron>(mp.normal, mp.offset, mp.fgraph);
@@ -50,8 +52,8 @@ void BenchmarkInterface::DsfColdStart(int set1_idx, const dsf::Transform3& tf1,
     throw std::range_error("Set indices are out of range");
   }
   dsf::Output out;
-  dsf::DSF* set1 = vdsfs_[set1_idx].get();
-  dsf::DSF* set2 = vdsfs_[set2_idx].get();
+  dsf::DSF* set1 = vdsfs_[set1_idx]->VDSFPtr();
+  dsf::DSF* set2 = vdsfs_[set2_idx]->VDSFPtr();
   // Initial run to account for cache misses.
   dsf::GrowthDistance(set1, tf1, set2, tf2, dsf_.settings, out);
 
@@ -284,6 +286,13 @@ void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
                        (out.status == dgd::SolutionStatus::Optimal);
     res_arr.AddResult(res);
   }
+}
+
+void BenchmarkInterface::SetDefaultRngSeed() const { dgd::SetDefaultSeed(); }
+
+int BenchmarkInterface::RandomMeshIndex() const {
+  std::uniform_int_distribution<int> dis(0, nmeshes_ - 1);
+  return dis(dgd::generator);
 }
 
 }  // namespace internal
