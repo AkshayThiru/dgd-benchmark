@@ -12,7 +12,7 @@ message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 # Options
 option(DSF_SIGNED_DISTANCE "[DSF]: Return signed distance output" OFF)
 option(IE_SMALL_SIMPLEX    "[IE] : Use small initial simplex" OFF)
-option(IE_DISTANCE_TC      "[IE] : Use the original distance termination criterion" ON)
+option(IE_DISTANCE_TC      "[IE] : Use the original distance termination criterion" OFF)
 
 option(BENCHMARK_BUILD_TESTS "Build tests" ON)
 

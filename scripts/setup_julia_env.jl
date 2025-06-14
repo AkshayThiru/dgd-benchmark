@@ -32,6 +32,10 @@ Pkg.add("MeshIO")
 Pkg.add("GeometryBasics")
 Pkg.add("Polyhedra")
 Pkg.add("CDDLib")
+# Logging dependencies
+Pkg.add("Arrow")
+# Others
+Pkg.add("ProgressBars")
 
 # Instantiate/resolve dependencies
 Pkg.instantiate()

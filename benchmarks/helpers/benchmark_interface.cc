@@ -21,6 +21,7 @@ BenchmarkInterface::BenchmarkInterface(int ncold, int nwarm)
   const dgd::internal::ConvexSetFeatureRange fr{};
   generator_ = std::make_shared<dgd::internal::ConvexSetGenerator>(fr);
 
+  opt_sols_.clear();
   opt_sols_.resize(nwarm);
 
   timer_.Start();
@@ -39,7 +40,7 @@ void BenchmarkInterface::LoadMeshesFromObjFiles(
   for (int i = 0; i < nmeshes_; ++i) {
     vdsfs_[i] = std::make_shared<dsf::VDSFInterface<kVdsfExp>>(
         meshes[i]->vertices(), meshes[i]->inradius(), 0.0);
-    dgd::internal::SetFacetMeshFromVertices(meshes[i]->vertices(), mp);
+    mp.SetFacetMeshFromVertices(meshes[i]->vertices());
     polyhedra_[i] =
         std::make_shared<inc::Polyhedron>(mp.normal, mp.offset, mp.fgraph);
   }
@@ -172,6 +173,8 @@ void BenchmarkInterface::IncWarmStart(int set1_idx, const inc::Transform3& tf1,
   inc_.solver->GrowthDistance(set1, tf1, set2, tf2, out, false);
 
   inc::Transform3 tf1_t{tf1};
+  opt_sols_.clear();
+  opt_sols_.resize(nwarm_);
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < nwarm_; ++i) {
@@ -261,6 +264,8 @@ void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
   dgd::GrowthDistance(set1, tf1, set2, tf2, dgd_.settings, out);
 
   dgd::Transform3r tf1_t{tf1};
+  opt_sols_.clear();
+  opt_sols_.resize(nwarm_);
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < nwarm_; ++i) {

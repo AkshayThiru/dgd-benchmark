@@ -35,10 +35,7 @@ function compute_convex_hull_hrep(points::Vector{SVector{3, Float64}})
   return A, b
 end
 
-function generate_random_polyhedron(nrows::Int, rng_seed::Int = 1234,
-                                    max_norm_A::Real = 1.0,
-                                    box_bound::Real = 5.0)
-  Random.seed!(rng_seed)
+function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bound::Real = 1.0)
   if nrows < 6
     error("To guarantee boundedness, nrows must be at least 6.")
   end
@@ -52,16 +49,16 @@ function generate_random_polyhedron(nrows::Int, rng_seed::Int = 1234,
     ej_pos[j] = 1.0
     push!(A_rows, SVector{3}(ej_pos))
     push!(b_vec, box_bound)
-    # Negative bound -x_j <= boux_bound.
+    # Negative bound -x_j <= box_bound.
     ej_neg = zeros(3)
     ej_neg[j] = -1.0
     push!(A_rows, SVector{3}(ej_neg))
     push!(b_vec, box_bound)
   end
 
-  for i in 1:(nrows - 6)
-    n = normalize(randn(3)) * rand() * max_norm_A
-    b_i = rand() * (sqrt(3) * box_bound)
+  for _ in 1:(nrows - 6)
+    n = normalize(randn(rng, 3))
+    b_i = (0.5 + rand(rng) * 0.5) * box_bound
 
     push!(A_rows, SVector{3}(n))
     push!(b_vec, b_i)

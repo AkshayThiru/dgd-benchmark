@@ -66,15 +66,15 @@ int main(int argc, char** argv) {
     }
   }
 
-  std::cout << "DSF:" << std::endl;
-  res_dsf.PrintStatistics();
+  std::cout << "Differentiable support function:" << std::endl;
   res_dsf.SaveToFile(log_path + "dsf_bm__cold_dsf.feather");
+  res_dsf.PrintStatistics();
 
-  std::cout << "IE:" << std::endl;
+  std::cout << "Internal expanding:" << std::endl;
+  res_ie.SaveToFile(log_path + "dsf_bm__cold_ie.feather");
   res_ie.PrintStatistics();
-  res_dsf.SaveToFile(log_path + "dsf_bm__cold_ie.feather");
 
   std::cout << "DGD:" << std::endl;
+  res_dgd.SaveToFile(log_path + "dsf_bm__cold_dgd.feather");
   res_dgd.PrintStatistics();
-  res_dsf.SaveToFile(log_path + "dsf_bm__cold_dgd.feather");
 }

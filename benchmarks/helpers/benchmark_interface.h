@@ -36,8 +36,6 @@ class BenchmarkInterface {
   static constexpr unsigned int kVdsfExp = 16;
 
   using DsfPtr = std::shared_ptr<dsf::VDSFInterface<kVdsfExp>>;
-  using PolyhedronPtr = std::shared_ptr<inc::Polyhedron>;
-  using SetGeneratorPtr = std::shared_ptr<dgd::internal::ConvexSetGenerator>;
 
   explicit BenchmarkInterface(int ncold, int nwarm);
 
@@ -87,7 +85,17 @@ class BenchmarkInterface {
 
   const std::vector<DsfPtr>& vdsfs() const { return vdsfs_; }
 
-  const std::vector<PolyhedronPtr>& polyhedra() const { return polyhedra_; }
+  const std::vector<std::shared_ptr<inc::Polyhedron>>& polyhedra() const {
+    return polyhedra_;
+  }
+
+  const std::vector<std::shared_ptr<dgd::Mesh>>& meshes() const {
+    return generator_->meshes();
+  }
+
+  const std::shared_ptr<dgd::ConvexSet<3>> RandomCurvedPrimitiveSet() const {
+    return generator_->GetRandomCurvedPrimitive3DSet();
+  }
 
   int ncold() const { return ncold_; }
 
@@ -117,8 +125,8 @@ class BenchmarkInterface {
   } dgd_;
 
   std::vector<DsfPtr> vdsfs_;
-  std::vector<PolyhedronPtr> polyhedra_;
-  SetGeneratorPtr generator_;
+  std::vector<std::shared_ptr<inc::Polyhedron>> polyhedra_;
+  std::shared_ptr<dgd::internal::ConvexSetGenerator> generator_;
 
   // Temporary storage variables.
   std::vector<OptimalSolution> opt_sols_;

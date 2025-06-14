@@ -13,6 +13,7 @@ A, b = compute_convex_hull_hrep(points)
 println("Size of A (mesh): ", size(A))
 println("Size of b (mesh): ", size(b))
 
-A, b = generate_random_polyhedron(10)
+rng = Random.MersenneTwister(5489)
+A, b = generate_random_polyhedron(rng, 10)
 println("Size of A (gen): ", size(A))
 println("Size of b (gen): ", size(b))
