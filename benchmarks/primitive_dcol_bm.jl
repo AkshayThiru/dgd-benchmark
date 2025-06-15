@@ -3,8 +3,9 @@ const ENV_PATH = joinpath(@__DIR__, "../extern/julia_env")
 println(ENV_PATH)
 Pkg.activate(ENV_PATH)
 
-include("../benchmarks/helpers/random_utils.jl")
-include("../benchmarks/helpers/benchmark_result.jl")
+include("helpers/random_utils.jl")
+include("helpers/benchmark_result.jl")
+include("helpers/socp_solver.jl")
 
 using Statistics
 using BenchmarkTools
@@ -55,12 +56,12 @@ for i in 1:npair
     G_ort2, h_ort2, G_soc2, h_soc2 = dc.problem_matrices(set2, set2.r, set2.q)
     # Create and solve SOCP
     c, G, h, idx_ort, idx_soc1, idx_soc2 = dc.combine_problem_matrices(G_ort1, h_ort1, G_soc1, h_soc1,G_ort2, h_ort2, G_soc2, h_soc2)
-    x, s, z = dc.solve_socp(c, G, h, idx_ort, idx_soc1, idx_soc2; verbose = false, pdip_tol = pdip_tol)
+    x, s, z, iter = custom_solve_socp(c, G, h, idx_ort, idx_soc1, idx_soc2; pdip_tol = pdip_tol)
     # Compute solution errors
     prim_dual_gap = dot(s, z)
     prim_feas_err = norm(G*x + s - h)
     solve_time = @belapsed dc.proximity($set1, $set2; verbose = false, pdip_tol = pdip_tol) samples=bm_samples seconds=max_bm_time_per_run
-    add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_feas_err)
+    add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_feas_err, iter)
     update(pbar)
   end
 end
