@@ -12,7 +12,7 @@ target_link_libraries(benchmark_helper
     Eigen3::Eigen
     dgd::dgd
     dgd_internal_helper
-    dsf
+    dcf
     ie
     inc
   PRIVATE

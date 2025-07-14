@@ -1,14 +1,14 @@
-#ifndef DGD_BENCHMARK_DSF_DSF_H_
-#define DGD_BENCHMARK_DSF_DSF_H_
+#ifndef DGD_BENCHMARK_DCF_DSF_H_
+#define DGD_BENCHMARK_DCF_DSF_H_
 
 #include <cmath>
 #include <cstddef>
 #include <vector>
 
-#include "dsf/precompiled.h"
-#include "dsf/utils.h"
+#include "dcf/precompiled.h"
+#include "dcf/utils.h"
 
-namespace dsf {
+namespace dcf {
 
 // Differentiable support function base class.
 class DSF {
@@ -134,6 +134,6 @@ class VDSF : public DSF {
   static constexpr double kThresh = 0.1;
 };
 
-}  // namespace dsf
+}  // namespace dcf
 
-#endif  // DGD_BENCHMARK_DSF_DSF_H_
+#endif  // DGD_BENCHMARK_DCF_DSF_H_

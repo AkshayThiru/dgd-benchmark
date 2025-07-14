@@ -1,5 +1,5 @@
-add_executable(dsf_test "${CMAKE_CURRENT_SOURCE_DIR}/dsf_test.cc")
-target_link_libraries(dsf_test PRIVATE dsf)
+add_executable(dcf_test "${CMAKE_CURRENT_SOURCE_DIR}/dcf_test.cc")
+target_link_libraries(dcf_test PRIVATE dcf)
 
 add_executable(ie_test "${CMAKE_CURRENT_SOURCE_DIR}/ie_test.cc")
 target_link_libraries(ie_test PRIVATE ie)

@@ -1,14 +1,14 @@
-#ifndef DGD_BENCHMARK_DSF_DSF_INTERFACE_H_
-#define DGD_BENCHMARK_DSF_DSF_INTERFACE_H_
+#ifndef DGD_BENCHMARK_DCF_DSF_INTERFACE_H_
+#define DGD_BENCHMARK_DCF_DSF_INTERFACE_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "dcf/dsf.h"
 #include "dgd/geometry/convex_set.h"
-#include "dsf/dsf.h"
 
-namespace dsf {
+namespace dcf {
 
 // DSF interface class.
 template <int exp>
@@ -58,6 +58,6 @@ inline VDSF<exp>* VDSFInterface<exp>::VDSFPtr() const {
   return vdsf_.get();
 }
 
-}  // namespace dsf
+}  // namespace dcf
 
-#endif  // DGD_BENCHMARK_DSF_DSF_INTERFACE_H_
+#endif  // DGD_BENCHMARK_DCF_DSF_INTERFACE_H_

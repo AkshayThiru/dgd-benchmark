@@ -7,10 +7,10 @@
 
 // Constants.
 const double position_lim = 5.0;
-const double dx_max = 0.1, ang_max = dgd::kPi / 20.0;
-const int npair = 100;
-const int npose_c = 100, npose_w = 10;
-const int ncold = 100, nwarm = 50;
+const double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
+const int npair = 1000;
+const int npose_c = 100, npose_w = 100;
+const int ncold = 100, nwarm = 100;
 
 int main(int argc, char** argv) {
   if (argc < 2) {

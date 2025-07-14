@@ -1,19 +1,19 @@
-#ifndef DGD_BENCHMARK_DSF_DSF_COLLISION_H_
-#define DGD_BENCHMARK_DSF_DSF_COLLISION_H_
+#ifndef DGD_BENCHMARK_DCF_DCF_COLLISION_H_
+#define DGD_BENCHMARK_DCF_DCF_COLLISION_H_
 
 #include <cstdint>
 
-#include "dsf/dsf.h"
-#include "dsf/precompiled.h"
-#include "dsf/utils.h"
+#include "dcf/dsf.h"
+#include "dcf/precompiled.h"
+#include "dcf/utils.h"
 
-namespace dsf {
+namespace dcf {
 
 // Solver settings.
 struct Settings {
   double min_center_dist = kSqrtEps;
   double tol = kSqrtEps;
-  int max_iter = 10;
+  int max_iter = 50;
   int ie_iter = 4;
 };
 
@@ -66,6 +66,6 @@ struct SolutionError {
 SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
                                    const Transform3& tf2, Output& out);
 
-}  // namespace dsf
+}  // namespace dcf
 
-#endif  // DGD_BENCHMARK_DSF_DSF_COLLISION_H_
+#endif  // DGD_BENCHMARK_DCF_DCF_COLLISION_H_

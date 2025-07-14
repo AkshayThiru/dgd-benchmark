@@ -4,14 +4,14 @@
 #include <memory>
 #include <vector>
 
+#include "dcf/dcf_collision.h"
+#include "dcf/dsf.h"
+#include "dcf/dsf_interface.h"
+#include "dcf/precompiled.h"
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
-#include "dsf/dsf.h"
-#include "dsf/dsf_collision.h"
-#include "dsf/dsf_interface.h"
-#include "dsf/precompiled.h"
 #include "helpers/benchmark_result.h"
 #include "ie/internal_expanding.h"
 #include "inc/data_types.h"
@@ -35,13 +35,13 @@ class BenchmarkInterface {
  public:
   static constexpr unsigned int kVdsfExp = 16;
 
-  using DsfPtr = std::shared_ptr<dsf::VDSFInterface<kVdsfExp>>;
+  using DsfPtr = std::shared_ptr<dcf::VDSFInterface<kVdsfExp>>;
 
   explicit BenchmarkInterface(int ncold, int nwarm);
 
   ~BenchmarkInterface() = default;
 
-  void SetDsfSettings(const dsf::Settings& settings);
+  void SetDcfSettings(const dcf::Settings& settings);
 
   void SetIeSettings(const ie::Settings& settings);
 
@@ -52,9 +52,9 @@ class BenchmarkInterface {
   // Load meshes.
   void LoadMeshesFromObjFiles(const std::vector<std::string>& filenames);
 
-  // DSF benchmarks.
-  void DsfColdStart(int set1_idx, const dsf::Transform3& tf1, int set2_idx,
-                    const dsf::Transform3& tf2, BenchmarkResultArray& res_arr);
+  // DCF benchmarks.
+  void DcfColdStart(int set1_idx, const dcf::Transform3& tf1, int set2_idx,
+                    const dcf::Transform3& tf2, BenchmarkResultArray& res_arr);
 
   // IE benchmarks.
   void IeColdStart(const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
@@ -104,10 +104,10 @@ class BenchmarkInterface {
   int nmeshes() const { return nmeshes_; }
 
  private:
-  // Differential support function variables.
+  // Differential contact features variables.
   struct {
-    dsf::Settings settings;
-  } dsf_;
+    dcf::Settings settings;
+  } dcf_;
 
   // Internal expanding variables.
   struct {
@@ -140,8 +140,8 @@ class BenchmarkInterface {
   int nmeshes_;
 };
 
-inline void BenchmarkInterface::SetDsfSettings(const dsf::Settings& settings) {
-  dsf_.settings = settings;
+inline void BenchmarkInterface::SetDcfSettings(const dcf::Settings& settings) {
+  dcf_.settings = settings;
 }
 
 inline void BenchmarkInterface::SetIeSettings(const ie::Settings& settings) {

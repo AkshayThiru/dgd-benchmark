@@ -38,7 +38,7 @@ void BenchmarkInterface::LoadMeshesFromObjFiles(
   polyhedra_.resize(nmeshes_);
   dgd::internal::MeshProperties mp;
   for (int i = 0; i < nmeshes_; ++i) {
-    vdsfs_[i] = std::make_shared<dsf::VDSFInterface<kVdsfExp>>(
+    vdsfs_[i] = std::make_shared<dcf::VDSFInterface<kVdsfExp>>(
         meshes[i]->vertices(), meshes[i]->inradius(), 0.0);
     mp.SetFacetMeshFromVertices(meshes[i]->vertices());
     polyhedra_[i] =
@@ -46,25 +46,25 @@ void BenchmarkInterface::LoadMeshesFromObjFiles(
   }
 }
 
-void BenchmarkInterface::DsfColdStart(int set1_idx, const dsf::Transform3& tf1,
-                                      int set2_idx, const dsf::Transform3& tf2,
+void BenchmarkInterface::DcfColdStart(int set1_idx, const dcf::Transform3& tf1,
+                                      int set2_idx, const dcf::Transform3& tf2,
                                       BenchmarkResultArray& res_arr) {
   if ((set1_idx >= nmeshes_) || (set2_idx >= nmeshes_)) {
     throw std::range_error("Set indices are out of range");
   }
-  dsf::Output out;
-  dsf::DSF* set1 = vdsfs_[set1_idx]->VDSFPtr();
-  dsf::DSF* set2 = vdsfs_[set2_idx]->VDSFPtr();
+  dcf::Output out;
+  dcf::DSF* set1 = vdsfs_[set1_idx]->VDSFPtr();
+  dcf::DSF* set2 = vdsfs_[set2_idx]->VDSFPtr();
   // Initial run to account for cache misses.
-  dsf::GrowthDistance(set1, tf1, set2, tf2, dsf_.settings, out);
+  dcf::GrowthDistance(set1, tf1, set2, tf2, dcf_.settings, out);
 
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < ncold_; ++i) {
-    dsf::GrowthDistance(set1, tf1, set2, tf2, dsf_.settings, out);
+    dcf::GrowthDistance(set1, tf1, set2, tf2, dcf_.settings, out);
   }
   timer_.Stop();
-  const auto err = dsf::ComputeSolutionError(set1, tf1, set2, tf2, out);
+  const auto err = dcf::ComputeSolutionError(set1, tf1, set2, tf2, out);
 
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
@@ -72,8 +72,8 @@ void BenchmarkInterface::DsfColdStart(int set1_idx, const dsf::Transform3& tf1,
   res.prim_feas_err = err.prim_feas_err;
   res.dual_feas_err = err.dual_feas_err;
   res.iter = out.iter;
-  res.optimal_flag = (out.status == dsf::SolutionStatus::CoincidentCenters) ||
-                     (out.status == dsf::SolutionStatus::Optimal);
+  res.optimal_flag = (out.status == dcf::SolutionStatus::CoincidentCenters) ||
+                     (out.status == dcf::SolutionStatus::Optimal);
   res_arr.AddResult(res);
 }
 

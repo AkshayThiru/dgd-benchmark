@@ -1,9 +1,9 @@
-#ifndef DGD_BENCHMARK_DSF_UTILS_H_
-#define DGD_BENCHMARK_DSF_UTILS_H_
+#ifndef DGD_BENCHMARK_DCF_UTILS_H_
+#define DGD_BENCHMARK_DCF_UTILS_H_
 
-#include "dsf/precompiled.h"
+#include "dcf/precompiled.h"
 
-namespace dsf {
+namespace dcf {
 
 // Quaternion SE(3) to Matrix SE(3).
 inline void Quaternion2RotationSe3(const Vec<7>& tfq, Transform3& tf) {
@@ -38,6 +38,6 @@ inline double Power<1>(double base) {
   return base;
 }
 
-}  // namespace dsf
+}  // namespace dcf
 
-#endif  // DGD_BENCHMARK_DSF_UTILS_H_
+#endif  // DGD_BENCHMARK_DCF_UTILS_H_

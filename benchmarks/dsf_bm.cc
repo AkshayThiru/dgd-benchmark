@@ -7,11 +7,8 @@
 
 // Constants.
 const double position_lim = 5.0;
-const int npair = 100, npose = 100;
+const int npair = 1000, npose = 100;
 const int ncold = 1;
-// DSF settings.
-const int ie_iter = 8;
-const int max_iter = 30;
 
 int main(int argc, char** argv) {
   if (argc < 3) {
@@ -36,12 +33,8 @@ int main(int argc, char** argv) {
     std::cerr << "At least two .obj files are required" << std::endl;
     return EXIT_FAILURE;
   }
-  dsf::Settings settings{};
-  settings.ie_iter = ie_iter;
-  settings.max_iter = max_iter;
-  interface.SetDsfSettings(settings);
 
-  internal::BenchmarkResultArray res_dsf(npair * npose);
+  internal::BenchmarkResultArray res_dcf(npair * npose);
   internal::BenchmarkResultArray res_ie(npair * npose);
   internal::BenchmarkResultArray res_dgd(npair * npose);
   dgd::ConvexSet<3>*set1, *set2;
@@ -57,8 +50,8 @@ int main(int argc, char** argv) {
     for (int j = 0; j < npose; ++j) {
       dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
                                            position_lim);
-      // DSF benchmark.
-      interface.DsfColdStart(set1_idx, tf1, set2_idx, tf2, res_dsf);
+      // DCF benchmark.
+      interface.DcfColdStart(set1_idx, tf1, set2_idx, tf2, res_dcf);
       // IE benchmark.
       interface.IeColdStart(set1, tf1, set2, tf2, res_ie);
       // DGD benchmark.
@@ -67,8 +60,8 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "Differentiable support function:" << std::endl;
-  res_dsf.SaveToFile(log_path + "dsf_bm__cold_dsf.feather");
-  res_dsf.PrintStatistics();
+  res_dcf.SaveToFile(log_path + "dsf_bm__cold_dcf.feather");
+  res_dcf.PrintStatistics();
 
   std::cout << "Internal expanding:" << std::endl;
   res_ie.SaveToFile(log_path + "dsf_bm__cold_ie.feather");

@@ -1,5 +1,5 @@
-#ifndef DGD_BENCHMARK_DSF_PRECOMPILED_H_
-#define DGD_BENCHMARK_DSF_PRECOMPILED_H_
+#ifndef DGD_BENCHMARK_DCF_PRECOMPILED_H_
+#define DGD_BENCHMARK_DCF_PRECOMPILED_H_
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -8,7 +8,7 @@
 #include <iostream>
 #include <limits>
 
-namespace dsf {
+namespace dcf {
 
 const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
@@ -46,6 +46,6 @@ using Transform3 = Mat4;
 
 using Quaternion = Eigen::Quaterniond;
 
-}  // namespace dsf
+}  // namespace dcf
 
-#endif  // DGD_BENCHMARK_DSF_PRECOMPILED_H_
+#endif  // DGD_BENCHMARK_DCF_PRECOMPILED_H_

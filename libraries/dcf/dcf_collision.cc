@@ -1,11 +1,11 @@
-#include "dsf/dsf_collision.h"
+#include "dcf/dcf_collision.h"
 
 #include <cmath>
 
-#include "dsf/dsf.h"
-#include "dsf/precompiled.h"
+#include "dcf/dsf.h"
+#include "dcf/precompiled.h"
 
-namespace dsf {
+namespace dcf {
 
 namespace {
 
@@ -110,7 +110,7 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
     V_sim.block<3, 3>(0, 0) = W_sim;
 
     if (out.iter <= settings.ie_iter) {
-      x = Winv_sim.transpose() * u0;
+      x = (Winv_sim.transpose() * u0).normalized();
       if (out.iter == 4) {
         dsf1->SupportFunction(x, pos1, R1, s1, ds1dx);
         dsf2->SupportFunction(-x, pos2, R2, s2, ds2dx);
@@ -121,12 +121,12 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
       V_sim.col(3) = s1 - s2 - q_bar;
     } else {
       // Newton step.
-      var.head<3>() = x.normalized();
+      var.head<3>() = x;
       var(3) = q_bar.norm() / (s1 - s2 - q_bar).norm();
       e.head<3>() = q_bar + var(3) * (s1 - s2 - q_bar);
       e(3) = 0.0;
       // COUT_SCALAR(e.norm());
-      if (e.norm() < settings.tol) {
+      if (e.head<3>().norm() < settings.tol) {
         out.status = SolutionStatus::Optimal;
         break;
       }
@@ -135,14 +135,14 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
       dedvar.block<3, 1>(0, 3) = s1 - pos1 - (s2 - pos2);
       dedvar.block<1, 3>(3, 0) = 2.0 * var.head<3>().transpose();
       dir = -dedvar.colPivHouseholderQr().solve(e);
-      x = var.head<3>() + dir.head<3>();
+      x = (var.head<3>() + dir.head<3>()).normalized();
       dsf1->SupportFunction(x, pos1, R1, s1, ds1dx);
       dsf2->SupportFunction(-x, pos2, R2, s2, ds2dx);
 
       // Safety.
       c_sim = Winv_sim * (s1 - s2 - q_bar);
       if (c_sim.minCoeff() < 0.0) {
-        x = Winv_sim.transpose() * u0;
+        x = (Winv_sim.transpose() * u0).normalized();
         dsf1->SupportFunction(x, pos1, R1, s1, ds1dx);
         dsf2->SupportFunction(-x, pos2, R2, s2, ds2dx);
       }
@@ -150,6 +150,12 @@ double GrowthDistance(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
     }
 
     out.iter++;
+    const double gd = q_bar.norm() / (s1 - s2 - q_bar).norm();
+    const double prim_infeas_err = (q_bar + gd * (s1 - s2 - q_bar)).norm();
+    if (prim_infeas_err < settings.tol) {
+      out.status = SolutionStatus::Optimal;
+      break;
+    }
     if (out.iter >= settings.max_iter) {
       out.status = SolutionStatus::MaxIterReached;
       break;
@@ -192,4 +198,4 @@ SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
   return err;
 }
 
-}  // namespace dsf
+}  // namespace dcf
