@@ -151,29 +151,44 @@ inline double Polyhedron::GlobalStepSize(const Vec3& x, const Vec3& dx,
   assert((fid >= 0) && (fid < nfacet_));
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
   Vec3 gamma;
-  double den, num, val, min = kInf;
-  int id = *adr;
-  do {
-    // if (id == fid) {  // Not required.
-    //   ++adr;
-    //   continue;
-    // }
-    gamma = gamma_[id];
-    den = 1.0 + gamma.dot(dx);
-    if (den > 0.0) {
-      num = std::max(sigma - gamma.dot(x), 0.0);  // For robustness.
-      // if (num > 0.0) { // Not necessary.
-      val = num / den;
-      if (val < min) {
-        min = val;
-        gfid = id;
-        adr = fnid_adr_ + *(fnid_off_ + gfid);
-        continue;
-      }
+  double den, num, val, min = kInf, max_den = -kInf;
+  int id, max_den_id;
+  for (int i = 0; i < nfacet_; ++i) {
+    id = *adr;
+    do {
+      // if (id == fid) {  // Not required.
+      //   ++adr;
+      //   continue;
       // }
+      gamma = gamma_[id];
+      den = 1.0 + gamma.dot(dx);
+      if (den > max_den) {
+        max_den = den;
+        max_den_id = id;
+      }
+      if (den > 0.0) {
+        num = std::max(sigma - gamma.dot(x), 0.0);  // For robustness.
+        // if (num > 0.0) { // Not necessary.
+        val = num / den;
+        if (val < min) {
+          min = val;
+          gfid = id;
+          adr = fnid_adr_ + *(fnid_off_ + gfid);
+          continue;
+        }
+        // }
+      }
+      ++adr;
+    } while ((id = *adr) != -1);
+
+    // If none of the neighbours have den > 0, move to the neighbour with the
+    // largest den.
+    if (max_den > 0.0) {
+      break;
+    } else {
+      adr = fnid_adr_ + *(fnid_off_ + max_den_id);
     }
-    ++adr;
-  } while ((id = *adr) != -1);
+  }
   assert(min >= 0.0);
   return min;
 }
@@ -182,6 +197,9 @@ template <bool skip_neighbour = false>
 inline bool Polyhedron::LocalFaceFeasible(const Vec3& x, double sigma, int fid,
                                           int nfid_) const {
   assert((fid >= 0) && (fid < nfacet_));
+  if (gamma_[fid].dot(x) > sigma) {
+    return false;
+  }
   auto adr = fnid_adr_ + *(fnid_off_ + fid);
   int id = *adr;
   do {
