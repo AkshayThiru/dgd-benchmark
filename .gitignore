@@ -36,3 +36,9 @@ build/
 
 # VSCode files
 .vscode/
+
+# Python files
+*.pyc
+
+# Images
+*.png
