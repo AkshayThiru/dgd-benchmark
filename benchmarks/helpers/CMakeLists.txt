@@ -11,7 +11,7 @@ target_link_libraries(benchmark_helper
   PUBLIC
     Eigen3::Eigen
     dgd::dgd
-    dgd_internal_helper
+    dgd_bench
     dcf
     ie
     inc
@@ -25,4 +25,5 @@ target_compile_options(benchmark_helper
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    # $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
 )

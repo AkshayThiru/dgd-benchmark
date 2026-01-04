@@ -112,10 +112,7 @@ class VDSF : public DSF {
                        Vec3& s, Mat3& dsdx, Mat<3, 6>& dsdq) final override {
     SupportFunction(x, pos, R, s, dsdx);
     dsdq.block<3, 3>(0, 0) = Mat3::Identity();
-    Mat3 Ws_pos, Wx;
-    Skew(s - pos, Ws_pos);
-    Skew(x, Wx);
-    dsdq.block<3, 3>(0, 3) = (-Ws_pos + dsdx * Wx) * R;
+    dsdq.block<3, 3>(0, 3) = (-Skew(s - pos) + dsdx * Skew(x)) * R;
   }
 
   void PrintInfo() final override {
@@ -124,6 +121,8 @@ class VDSF : public DSF {
     std::cout << "exp  : " << exp << std::endl;
     std::cout << "=====================" << std::endl;
   }
+
+  int nvert() const { return static_cast<int>(nvert_); }
 
  private:
   std::vector<Mat3> vvt_;

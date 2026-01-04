@@ -18,4 +18,5 @@ target_compile_options(inc
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    # $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
 )

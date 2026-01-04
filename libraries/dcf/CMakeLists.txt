@@ -18,6 +18,7 @@ target_compile_options(dcf
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    # $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
 )
 
 if (DCF_SIGNED_DISTANCE)

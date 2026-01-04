@@ -1,6 +1,7 @@
 #ifndef DGD_BENCHMARK_DCF_DSF_INTERFACE_H_
 #define DGD_BENCHMARK_DCF_DSF_INTERFACE_H_
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,27 +18,35 @@ class VDSFInterface : public dgd::ConvexSet<3> {
   explicit VDSFInterface(const std::vector<Vec3>& vert, double inradius,
                          double margin);
 
-  ~VDSFInterface() {};
+  ~VDSFInterface() = default;
 
   double SupportFunction(
       const Vec3& n, Vec3& sp,
       dgd::SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  double SupportFunction(
+      const Vec3& n, dgd::SupportFunctionDerivatives<3>& deriv,
+      dgd::SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
+
+  bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
   VDSF<exp>* VDSFPtr() const;
 
  private:
   std::unique_ptr<VDSF<exp>> vdsf_;
   const double margin_;
-  const double inradius_;
 };
 
 template <int exp>
 inline VDSFInterface<exp>::VDSFInterface(const std::vector<Vec3>& vert,
                                          double inradius, double margin)
-    : margin_(margin), inradius_(inradius) {
+    : ConvexSet<3>(), margin_(margin) {
   vdsf_ = std::make_unique<VDSF<exp>>(vert);
+  set_inradius(inradius + margin_);
 }
 
 template <int exp>
@@ -49,8 +58,32 @@ inline double VDSFInterface<exp>::SupportFunction(
 }
 
 template <int exp>
+inline double VDSFInterface<exp>::SupportFunction(
+    const Vec3& n, dgd::SupportFunctionDerivatives<3>& deriv,
+    dgd::SupportFunctionHint<3>* /*hint*/) const {
+  vdsf_->SupportFunction(n, Vec3::Zero(), Rotation3::Identity(), deriv.sp,
+                         deriv.Dsp);
+  deriv.Dsp.diagonal() += margin_ * Vec3::Ones();
+  deriv.sp += margin_ * n;
+  return n.dot(deriv.sp);
+}
+
+template <int exp>
 inline bool VDSFInterface<exp>::RequireUnitNormal() const {
   return (margin_ > 0.0);
+}
+
+template <int exp>
+inline bool VDSFInterface<exp>::IsPolytopic() const {
+  return false;
+}
+
+template <int exp>
+inline void VDSFInterface<exp>::PrintInfo() const {
+  std::cout << "Type: VSDF (dim = 3, exp = " << exp << ")" << std::endl
+            << "  #Vertices: " << vdsf_->nvert() << std::endl
+            << "  Inradius: " << inradius_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
 }
 
 template <int exp>

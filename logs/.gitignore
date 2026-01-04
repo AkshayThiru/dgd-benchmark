@@ -1,1 +1,5 @@
+# Feather files
 *.feather
+
+# Saved logs
+saved_logs/

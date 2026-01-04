@@ -1,6 +1,7 @@
 #ifndef DGD_BENCHMARK_IE_INTERNAL_EXPANDING_H_
 #define DGD_BENCHMARK_IE_INTERNAL_EXPANDING_H_
 
+#include <Eigen/LU>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -10,16 +11,34 @@
 
 namespace ie {
 
+// Constants.
+using dgd::kSqrtEps;
+
+// Types.
+using dgd::Matr;
+using dgd::Vec3r;
+using dgd::Vecr;
+
+using dgd::Affine;
+using dgd::Linear;
+using dgd::Rotation3r;
+using dgd::Transform3r;
+
+// Other types.
+using dgd::ConvexSet;
+using dgd::SupportFunctionHint;
+using dgd::detail::ConvexSetValidator;
+
 // Solver settings.
 struct Settings {
-  int max_iter = 100;
-  double min_center_dist = dgd::kSqrtEps;
-  double tol = dgd::kSqrtEps;
+  double min_center_dist = kSqrtEps;
+  double tol = kSqrtEps;
   double min_simplex_size = 1e-3;
+  int max_iter = 100;
 };
 
 // Solution status.
-enum class SolutionStatus : uint8_t {
+enum class SolutionStatus {
   Optimal,
   MaxIterReached,
   CoincidentCenters,
@@ -27,17 +46,17 @@ enum class SolutionStatus : uint8_t {
 
 // Solver output.
 struct Output {
-  dgd::Matr<3, 4> s1_ = dgd::Matr<3, 4>::Zero();
-  dgd::Matr<3, 4> s2_ = dgd::Matr<3, 4>::Zero();
-  dgd::Vecr<4> bc_ = dgd::Vecr<4>::Zero();
+  Matr<3, 4> s1_ = Matr<3, 4>::Zero();
+  Matr<3, 4> s2_ = Matr<3, 4>::Zero();
+  Vecr<4> bc_ = Vecr<4>::Zero();
 
-  dgd::SupportFunctionHint<3> hint1_{};
-  dgd::SupportFunctionHint<3> hint2_{};
+  SupportFunctionHint<3> hint1_{};
+  SupportFunctionHint<3> hint2_{};
 
   // normal points along p2 - p1.
-  dgd::Vec3r normal = dgd::Vec3r::Zero();
-  dgd::Vec3r z1 = dgd::Vec3r::Zero();
-  dgd::Vec3r z2 = dgd::Vec3r::Zero();
+  Vec3r normal = Vec3r::Zero();
+  Vec3r z1 = Vec3r::Zero();
+  Vec3r z2 = Vec3r::Zero();
   double growth_dist = 0.0;
 
   int iter = 0;
@@ -46,21 +65,21 @@ struct Output {
 
 // Growth distance function.
 template <class C1, class C2>
-double GrowthDistance(const C1* set1, const dgd::Transform3r& tf1,
-                      const C2* set2, const dgd::Transform3r& tf2,
-                      const Settings& settings, Output& out) {
-  static_assert((C1::dimension() == 3) && (C2::dimension() == 3),
-                "Convex sets are not three-dimensional");
+double GrowthDistance(const C1* set1, const Transform3r& tf1, const C2* set2,
+                      const Transform3r& tf2, const Settings& settings,
+                      Output& out) {
+  static_assert(ConvexSetValidator<3, C1>::valid, "Incompatible set C1");
+  static_assert(ConvexSetValidator<3, C2>::valid, "Incompatible set C2");
 
-  out.hint2_.n_prev = out.hint1_.n_prev = dgd::Vec3r::Zero();
+  out.hint2_.n_prev = out.hint1_.n_prev = Vec3r::Zero();
   out.iter = 0;
 
   // Check center distance.
-  const dgd::Vec3r p1 = tf1.block<3, 1>(0, 3), p2 = tf2.block<3, 1>(0, 3);
-  const dgd::Vec3r p12 = p1 - p2;
+  const Vec3r p1 = Affine(tf1), p2 = Affine(tf2);
+  const Vec3r p12 = p1 - p2;
   const double cdist = p12.norm();
   if (cdist < settings.min_center_dist) {
-    out.normal = dgd::Vec3r::Zero();
+    out.normal = Vec3r::Zero();
     out.z1 = p1;
     out.z2 = p2;
     out.growth_dist = 0.0;
@@ -68,25 +87,24 @@ double GrowthDistance(const C1* set1, const dgd::Transform3r& tf1,
     return 0.0;
   }
 
-  const dgd::Rotation3r rot1 = tf1.block<3, 3>(0, 0),
-                        rot2 = tf2.block<3, 3>(0, 0);
+  const Rotation3r rot1 = Linear(tf1), rot2 = Linear(tf2);
 
   // Simplex variables.
-  const dgd::Vec3r u0 = dgd::Vec3r::Ones();
-  dgd::Matr<3, 3> W, Winv;
-  dgd::Vec3r cone_coeff;
-  dgd::Vec3r sp1, sp2, sp;
+  const Vec3r u0 = Vec3r::Ones();
+  Matr<3, 3> W, Winv;
+  Vec3r cone_coeff;
+  Vec3r sp1, sp2, sp;
 
-  dgd::Matr<3, 4> V;
+  Matr<3, 4> V;
 #ifdef IE_SMALL_SIMPLEX
   const double simplex_size = settings.min_simplex_size;
 #else
   const double simplex_size = set1->inradius() + set2->inradius();
 #endif
-  V.col(0) = simplex_size * dgd::Vec3r(0.8, 0.0, -0.5);
-  V.col(1) = simplex_size * dgd::Vec3r(-0.5, 0.5, -0.5);
-  V.col(2) = simplex_size * dgd::Vec3r(-0.5, -0.5, -0.5);
-  V.col(3) = simplex_size * dgd::Vec3r(0.0, 0.0, 1.0);
+  V.col(0) = simplex_size * Vec3r(0.8, 0.0, -0.5);
+  V.col(1) = simplex_size * Vec3r(-0.5, 0.5, -0.5);
+  V.col(2) = simplex_size * Vec3r(-0.5, -0.5, -0.5);
+  V.col(3) = simplex_size * Vec3r(0.0, 0.0, 1.0);
 
   // Internal expanding algorithm.
   int idx_prev = -1;
@@ -150,38 +168,34 @@ double GrowthDistance(const C1* set1, const dgd::Transform3r& tf1,
 // Solution error.
 struct SolutionError {
   double prim_dual_gap;
-  double prim_feas_err;
-  double dual_feas_err = 0.0;
+  double prim_infeas_err;
+  double dual_infeas_err = 0.0;
 };
 
 // Computes solution error.
-inline SolutionError ComputeSolutionError(const dgd::ConvexSet<3>* set1,
-                                          const dgd::Transform3r& tf1,
-                                          const dgd::ConvexSet<3>* set2,
-                                          const dgd::Transform3r& tf2,
+inline SolutionError ComputeSolutionError(const ConvexSet<3>* set1,
+                                          const Transform3r& tf1,
+                                          const ConvexSet<3>* set2,
+                                          const Transform3r& tf2,
                                           const Output& out) {
   SolutionError err{};
   if (out.status == SolutionStatus::CoincidentCenters) {
-    err.prim_dual_gap = err.prim_feas_err = 0.0;
-    return err;
-  } else if (out.status != SolutionStatus::Optimal) {
-    err.prim_dual_gap = err.prim_feas_err = dgd::kInf;
+    err.prim_dual_gap = err.prim_infeas_err = 0.0;
     return err;
   }
 
-  const dgd::Vec3r p1 = tf1.block<3, 1>(0, 3), p2 = tf2.block<3, 1>(0, 3);
-  const dgd::Rotation3r rot1 = tf1.block<3, 3>(0, 0),
-                        rot2 = tf2.block<3, 3>(0, 0);
-  const dgd::Vec3r cp1 = p1 + out.growth_dist * (out.z1 - p1);
-  const dgd::Vec3r cp2 = p2 + out.growth_dist * (out.z2 - p2);
+  const Vec3r p1 = Affine(tf1), p2 = Affine(tf2);
+  const Rotation3r rot1 = Linear(tf1), rot2 = Linear(tf2);
+  const Vec3r cp1 = p1 + out.growth_dist * (out.z1 - p1);
+  const Vec3r cp2 = p2 + out.growth_dist * (out.z2 - p2);
 
-  dgd::Vec3r sp;
+  Vec3r sp;
   const double sv1 = set1->SupportFunction(rot1.transpose() * out.normal, sp);
   const double sv2 = set2->SupportFunction(-rot2.transpose() * out.normal, sp);
   const double lb = (p2 - p1).dot(out.normal) / (sv1 + sv2);
 
   err.prim_dual_gap = std::abs(out.growth_dist / lb - 1.0);
-  err.prim_feas_err = (cp1 - cp2).norm();
+  err.prim_infeas_err = (cp1 - cp2).norm() / (p1 - p2).norm();
   return err;
 }
 

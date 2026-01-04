@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace internal {
+namespace bench {
 
 namespace {
 
@@ -49,8 +49,8 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
   std::shared_ptr<arrow::Schema> schema =
       arrow::schema({arrow::field("solve_time", arrow::float64()),
                      arrow::field("prim_dual_gap", arrow::float64()),
-                     arrow::field("prim_feas_err", arrow::float64()),
-                     arrow::field("dual_feas_err", arrow::float64()),
+                     arrow::field("prim_infeas_err", arrow::float64()),
+                     arrow::field("dual_infeas_err", arrow::float64()),
                      arrow::field("iter", arrow::int32()),
                      arrow::field("optimal", arrow::boolean())});
 
@@ -61,13 +61,13 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
   ARROW_ASSIGN_OR_RAISE(prim_dual_gap_array,
                         MakeDoubleArray(res_arr.prim_dual_gaps));
 
-  std::shared_ptr<arrow::Array> prim_feas_err_array;
-  ARROW_ASSIGN_OR_RAISE(prim_feas_err_array,
-                        MakeDoubleArray(res_arr.prim_feas_errs));
+  std::shared_ptr<arrow::Array> prim_infeas_err_array;
+  ARROW_ASSIGN_OR_RAISE(prim_infeas_err_array,
+                        MakeDoubleArray(res_arr.prim_infeas_errs));
 
-  std::shared_ptr<arrow::Array> dual_feas_err_array;
-  ARROW_ASSIGN_OR_RAISE(dual_feas_err_array,
-                        MakeDoubleArray(res_arr.dual_feas_errs));
+  std::shared_ptr<arrow::Array> dual_infeas_err_array;
+  ARROW_ASSIGN_OR_RAISE(dual_infeas_err_array,
+                        MakeDoubleArray(res_arr.dual_infeas_errs));
 
   std::shared_ptr<arrow::Array> iter_array;
   ARROW_ASSIGN_OR_RAISE(iter_array, MakeInt32Array(res_arr.iters));
@@ -80,8 +80,8 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
       arrow::Table::Make(schema, {
                                      solve_time_array,
                                      prim_dual_gap_array,
-                                     prim_feas_err_array,
-                                     dual_feas_err_array,
+                                     prim_infeas_err_array,
+                                     dual_infeas_err_array,
                                      iter_array,
                                      optimal_flag_array,
                                  })};
@@ -109,4 +109,4 @@ bool BenchmarkResultArray::SaveToFile(const std::string& filename) {
   return true;
 }
 
-}  // namespace internal
+}  // namespace bench

@@ -12,8 +12,8 @@ namespace inc {
 // Solution error.
 struct SolutionError {
   double prim_dual_gap;
-  double prim_feas_err = 0.0;
-  double dual_feas_err;
+  double prim_infeas_err = 0.0;
+  double dual_infeas_err;
 };
 
 // Computes solution error.
@@ -23,7 +23,7 @@ inline SolutionError ComputeSolutionError(const dgd::ConvexSet<3>* set1,
                                           const Transform3& tf2,
                                           const Output& out) {
   SolutionError err{};
-  err.dual_feas_err = 0.0;
+  err.dual_infeas_err = 0.0;  // We don't explicitly calculate this error.
   if (out.status == SolutionStatus::CoincidentCenters) {
     err.prim_dual_gap = 0.0;
     return err;
@@ -32,8 +32,8 @@ inline SolutionError ComputeSolutionError(const dgd::ConvexSet<3>* set1,
     return err;
   }
 
-  const Vec3 p1 = tf1.block<3, 1>(0, 3), p2 = tf2.block<3, 1>(0, 3);
-  const Rotation3 rot1 = tf1.block<3, 3>(0, 0), rot2 = tf2.block<3, 3>(0, 0);
+  const Vec3 p1 = Affine(tf1), p2 = Affine(tf2);
+  const Rotation3 rot1 = Linear(tf1), rot2 = Linear(tf2);
 
   Vec3 sp;
   const double sv1 = set1->SupportFunction(rot1.transpose() * out.normal, sp);

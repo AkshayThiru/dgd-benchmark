@@ -4,7 +4,8 @@
 #include "dgd/geometry/convex_set.h"
 #include "helpers/benchmark_interface.h"
 #include "helpers/benchmark_result.h"
-#include "internal_helpers/utils.h"
+#include "internal_helpers/filesystem_utils.h"
+#include "internal_helpers/math_utils.h"
 
 // Constants.
 const double position_lim = 5.0;
@@ -21,21 +22,24 @@ int main(int argc, char** argv) {
   }
 
   const std::string asset_path = argv[1], log_path = argv[2];
-  if (!dgd::internal::IsValidDirectory(asset_path) ||
-      !dgd::internal::IsValidDirectory(log_path)) {
+  if (!dgd::bench::IsValidDirectory(asset_path) ||
+      !dgd::bench::IsValidDirectory(log_path)) {
     std::cerr << "Invalid asset or log directory" << std::endl;
     return EXIT_FAILURE;
   }
 
-  std::vector<std::string> filenames;
-  dgd::internal::GetObjFileNames(asset_path, filenames);
+  const auto filenames = dgd::bench::GetObjFileNames(asset_path);
 
-  internal::BenchmarkInterface interface(ncold, nwarm);
+  bench::BenchmarkInterface interface(ncold, nwarm);
   interface.LoadMeshesFromObjFiles(filenames);
   if (interface.nmeshes() == 0) {
     std::cerr << "No meshes were loaded" << std::endl;
     return EXIT_FAILURE;
   }
+  interface.SetRngSeed();
+
+  using bench::DgdBcSolverType;
+  using bench::DgdSolverType;
 
   dgd::ConvexSet<3>*set1, *set2;
   int set1_idx, set2_idx;
@@ -44,23 +48,25 @@ int main(int argc, char** argv) {
   /**
    * Cold-start benchmarks.
    */
-  internal::BenchmarkResultArray res_inc_c(npair * npose_c);
-  internal::BenchmarkResultArray res_ie_c(npair * npose_c);
-  internal::BenchmarkResultArray res_dgd_c(npair * npose_c);
+  bench::BenchmarkResultArray res_inc_c(npair * npose_c);
+  bench::BenchmarkResultArray res_ie_c(npair * npose_c);
+  bench::BenchmarkResultArray res_dgd_c(npair * npose_c);
   for (int i = 0; i < npair; ++i) {
     set1_idx = interface.RandomMeshIndex();
     set2_idx = interface.RandomMeshIndex();
     set1 = interface.meshes()[set1_idx].get();
     set2 = interface.meshes()[set2_idx].get();
     for (int j = 0; j < npose_c; ++j) {
-      dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
-                                           position_lim);
-      // INC benchmark.
+      dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
+                                      position_lim);
+      // Incremental benchmark.
       interface.IncColdStart(set1_idx, tf1, set2_idx, tf2, res_inc_c);
       // IE benchmark.
       interface.IeColdStart(set1, tf1, set2, tf2, res_ie_c);
-      // DGD benchmark.
-      interface.DgdColdStart(set1, tf1, set2, tf2, res_dgd_c);
+      // DGD benchmark (cutting plane, Cramer's rule).
+      interface.DgdColdStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(set1, tf1, set2, tf2,
+                                                      res_dgd_c);
     }
   }
 
@@ -72,30 +78,40 @@ int main(int argc, char** argv) {
   res_ie_c.SaveToFile(log_path + "mesh_bm__cold_ie.feather");
   res_ie_c.PrintStatistics();
 
-  std::cout << "DGD (cold-start):" << std::endl;
-  res_dgd_c.SaveToFile(log_path + "mesh_bm__cold_dgd.feather");
+  std::cout << "DGD (cold-start, cutting plane, Cramer's rule):" << std::endl;
+  res_dgd_c.SaveToFile(log_path + "mesh_bm__cold_dgd_cp_cramer.feather");
   res_dgd_c.PrintStatistics();
 
   /**
    * Warm-start benchmarks.
    */
+  using dgd::WarmStartType;
+
   dgd::Vec3r dx;
   dgd::Rotation3r drot;
-  internal::BenchmarkResultArray res_inc_w(npair * npose_w * nwarm);
-  internal::BenchmarkResultArray res_dgd_w(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_inc_w(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_p(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_d(npair * npose_w * nwarm);
   for (int i = 0; i < npair; ++i) {
     set1_idx = interface.RandomMeshIndex();
     set2_idx = interface.RandomMeshIndex();
     set1 = interface.meshes()[set1_idx].get();
     set2 = interface.meshes()[set2_idx].get();
     for (int j = 0; j < npose_w; ++j) {
-      dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
-                                           position_lim);
-      dgd::internal::SetRandomScrew(dx, drot, dx_max, ang_max);
-      // INC benchmark.
+      dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
+                                      position_lim);
+      dgd::bench::SetRandomDisplacement(interface.rng(), dx, drot, dx_max,
+                                        ang_max);
+      // Incremental benchmark.
       interface.IncWarmStart(set1_idx, tf1, set2_idx, tf2, dx, drot, res_inc_w);
-      // DGD benchmark.
-      interface.DgdWarmStart(set1, tf1, set2, tf2, dx, drot, res_dgd_w);
+      // DGD benchmark (cutting plane, Cramer's rule, primal warm start).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(
+          set1, tf1, set2, tf2, dx, drot, res_dgd_w_p, WarmStartType::Primal);
+      // DGD benchmark (cutting plane, Cramer's rule, dual warm start).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(
+          set1, tf1, set2, tf2, dx, drot, res_dgd_w_d, WarmStartType::Dual);
     }
   }
 
@@ -103,7 +119,14 @@ int main(int argc, char** argv) {
   res_inc_w.SaveToFile(log_path + "mesh_bm__warm_inc.feather");
   res_inc_w.PrintStatistics();
 
-  std::cout << "DGD (warm-start):" << std::endl;
-  res_dgd_w.SaveToFile(log_path + "mesh_bm__warm_dgd.feather");
-  res_dgd_w.PrintStatistics();
+  std::cout << "DGD (primal warm-start, cutting plane, Cramer's rule):"
+            << std::endl;
+  res_dgd_w_p.SaveToFile(log_path +
+                         "mesh_bm__warm_dgd_primal_cp_cramer.feather");
+  res_dgd_w_p.PrintStatistics();
+
+  std::cout << "DGD (dual warm-start, cutting plane, Cramer's rule):"
+            << std::endl;
+  res_dgd_w_d.SaveToFile(log_path + "mesh_bm__warm_dgd_dual_cp_cramer.feather");
+  res_dgd_w_d.PrintStatistics();
 }

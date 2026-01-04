@@ -2,15 +2,15 @@
 
 #include <stdexcept>
 
+#include "dgd/dgd.h"
 #include "dgd/error_metrics.h"
 #include "dgd/geometry/3d/mesh.h"
-#include "dgd/growth_distance.h"
 #include "dgd/mesh_loader.h"
-#include "dgd/utils.h"
 #include "inc/solution_error.h"
+#include "internal_helpers/math_utils.h"
 #include "internal_helpers/mesh_loader.h"
 
-namespace internal {
+namespace bench {
 
 BenchmarkInterface::BenchmarkInterface(int ncold, int nwarm)
     : ncold_(ncold), nwarm_(nwarm), nmeshes_(0) {
@@ -18,8 +18,8 @@ BenchmarkInterface::BenchmarkInterface(int ncold, int nwarm)
 
   vdsfs_.clear();
   polyhedra_.clear();
-  const dgd::internal::ConvexSetFeatureRange fr{};
-  generator_ = std::make_shared<dgd::internal::ConvexSetGenerator>(fr);
+  const dgd::bench::ConvexSetFeatureRange fr{};
+  generator_ = std::make_shared<dgd::bench::ConvexSetGenerator>(fr);
 
   opt_sols_.clear();
   opt_sols_.resize(nwarm);
@@ -36,7 +36,7 @@ void BenchmarkInterface::LoadMeshesFromObjFiles(
 
   vdsfs_.resize(nmeshes_);
   polyhedra_.resize(nmeshes_);
-  dgd::internal::MeshProperties mp;
+  dgd::bench::MeshProperties mp;
   for (int i = 0; i < nmeshes_; ++i) {
     vdsfs_[i] = std::make_shared<dcf::VDSFInterface<kVdsfExp>>(
         meshes[i]->vertices(), meshes[i]->inradius(), 0.0);
@@ -69,8 +69,8 @@ void BenchmarkInterface::DcfColdStart(int set1_idx, const dcf::Transform3& tf1,
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
   res.prim_dual_gap = err.prim_dual_gap;
-  res.prim_feas_err = err.prim_feas_err;
-  res.dual_feas_err = err.dual_feas_err;
+  res.prim_infeas_err = err.prim_infeas_err;
+  res.dual_infeas_err = err.dual_infeas_err;
   res.iter = out.iter;
   res.optimal_flag = (out.status == dcf::SolutionStatus::CoincidentCenters) ||
                      (out.status == dcf::SolutionStatus::Optimal);
@@ -96,8 +96,8 @@ void BenchmarkInterface::IeColdStart(const dgd::ConvexSet<3>* set1,
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
   res.prim_dual_gap = err.prim_dual_gap;
-  res.prim_feas_err = err.prim_feas_err;
-  res.dual_feas_err = err.dual_feas_err;
+  res.prim_infeas_err = err.prim_infeas_err;
+  res.dual_infeas_err = err.dual_infeas_err;
   res.iter = out.iter;
   res.optimal_flag = (out.status == ie::SolutionStatus::CoincidentCenters) ||
                      (out.status == ie::SolutionStatus::Optimal);
@@ -128,8 +128,8 @@ void BenchmarkInterface::IncColdStart(int set1_idx, const inc::Transform3& tf1,
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
   res.prim_dual_gap = err.prim_dual_gap;
-  res.prim_feas_err = err.prim_feas_err;
-  res.dual_feas_err = err.dual_feas_err;
+  res.prim_infeas_err = err.prim_infeas_err;
+  res.dual_infeas_err = err.dual_infeas_err;
   res.iter = out.iter;
   res.optimal_flag = (out.status == inc::SolutionStatus::CoincidentCenters) ||
                      (out.status == inc::SolutionStatus::Optimal);
@@ -178,7 +178,7 @@ void BenchmarkInterface::IncWarmStart(int set1_idx, const inc::Transform3& tf1,
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < nwarm_; ++i) {
-    dgd::internal::UpdateTransform(tf1_t, dx, drot);
+    dgd::bench::UpdateTransform(tf1_t, dx, drot);
     inc_.solver->GrowthDistance(set1, tf1_t, set2, tf2, out, true);
     SetOptimalSolution(out, opt_sols_[i]);
   }
@@ -189,14 +189,14 @@ void BenchmarkInterface::IncWarmStart(int set1_idx, const inc::Transform3& tf1,
   const dgd::ConvexSet<3>* set2_v = generator_->meshes()[set2_idx].get();
   tf1_t = tf1;
   for (int i = 0; i < nwarm_; ++i) {
-    dgd::internal::UpdateTransform(tf1_t, dx, drot);
+    dgd::bench::UpdateTransform(tf1_t, dx, drot);
     SetOutput(opt_sols_[i], out);
     const auto err = inc::ComputeSolutionError(set1_v, tf1_t, set2_v, tf2, out);
     BenchmarkResult res;
     res.solve_time = solve_time_avg;
     res.prim_dual_gap = err.prim_dual_gap;
-    res.prim_feas_err = err.prim_feas_err;
-    res.dual_feas_err = err.dual_feas_err;
+    res.prim_infeas_err = err.prim_infeas_err;
+    res.dual_infeas_err = err.dual_infeas_err;
     res.iter = opt_sols_[i].iter;
     res.optimal_flag = (out.status == inc::SolutionStatus::CoincidentCenters) ||
                        (out.status == inc::SolutionStatus::Optimal);
@@ -204,32 +204,72 @@ void BenchmarkInterface::IncWarmStart(int set1_idx, const inc::Transform3& tf1,
   }
 }
 
+template <DgdSolverType S, DgdBcSolverType BST>
 void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
                                       const dgd::Transform3r& tf1,
                                       const dgd::ConvexSet<3>* set2,
                                       const dgd::Transform3r& tf2,
                                       BenchmarkResultArray& res_arr) {
+  using dgd::detail::BcSolverType;
+  [[maybe_unused]] constexpr BcSolverType bst = (BST == DgdBcSolverType::Cramer)
+                                                    ? BcSolverType::kCramer
+                                                    : BcSolverType::kLU;
+
+  using C = dgd::ConvexSet<3>;
   dgd::Output<3> out;
-  dgd::GrowthDistance(set1, tf1, set2, tf2, dgd_.settings, out);
+  if constexpr (S == DgdSolverType::CuttingPlane) {
+    dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
+                                        out);
+  } else {
+    dgd::GrowthDistanceTrn(set1, tf1, set2, tf2, dgd_.settings, out);
+  }
 
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < ncold_; ++i) {
-    dgd::GrowthDistance(set1, tf1, set2, tf2, dgd_.settings, out);
+    if constexpr (S == DgdSolverType::CuttingPlane) {
+      dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
+                                          out);
+    } else {
+      dgd::GrowthDistanceTrn(set1, tf1, set2, tf2, dgd_.settings, out);
+    }
   }
   timer_.Stop();
   const auto err = dgd::ComputeSolutionError(set1, tf1, set2, tf2, out);
 
+  // TODO:
+  if (out.status != dgd::SolutionStatus::Optimal) {
+    exit(EXIT_FAILURE);
+  }
+
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
   res.prim_dual_gap = err.prim_dual_gap;
-  res.prim_feas_err = err.prim_feas_err;
-  res.dual_feas_err = err.dual_feas_err;
+  res.prim_infeas_err = err.prim_infeas_err;
+  res.dual_infeas_err = err.dual_infeas_err;
   res.iter = out.iter;
   res.optimal_flag = (out.status == dgd::SolutionStatus::CoincidentCenters) ||
                      (out.status == dgd::SolutionStatus::Optimal);
   res_arr.AddResult(res);
 }
+
+template void BenchmarkInterface::DgdColdStart<DgdSolverType::CuttingPlane,
+                                               DgdBcSolverType::Cramer>(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    BenchmarkResultArray& res_arr);
+
+template void BenchmarkInterface::DgdColdStart<DgdSolverType::CuttingPlane,
+                                               DgdBcSolverType::LU>(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    BenchmarkResultArray& res_arr);
+
+template void BenchmarkInterface::DgdColdStart<DgdSolverType::TrustRegionNewton,
+                                               DgdBcSolverType::LU>(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    BenchmarkResultArray& res_arr);
 
 namespace {
 
@@ -253,15 +293,26 @@ inline void SetOutput(const OptimalSolution& opt_sol, dgd::Output<3>& out) {
 
 }  // namespace
 
-void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
-                                      const dgd::Transform3r& tf1,
-                                      const dgd::ConvexSet<3>* set2,
-                                      const dgd::Transform3r& tf2,
-                                      const dgd::Vec3r& dx,
-                                      const dgd::Rotation3r& drot,
-                                      BenchmarkResultArray& res_arr) {
+template <DgdSolverType S, DgdBcSolverType BST>
+void BenchmarkInterface::DgdWarmStart(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    const dgd::Vec3r& dx, const dgd::Rotation3r& drot,
+    BenchmarkResultArray& res_arr, dgd::WarmStartType ws_type) {
+  static_assert(S != DgdSolverType::TrustRegionNewton,
+                "The TRN solver does not support warm starting.");
+  using dgd::detail::BcSolverType;
+  constexpr BcSolverType bst = (BST == DgdBcSolverType::Cramer)
+                                   ? BcSolverType::kCramer
+                                   : BcSolverType::kLU;
+
+  using C = dgd::ConvexSet<3>;
+  dgd_.settings.ws_type = ws_type;
   dgd::Output<3> out;
-  dgd::GrowthDistance(set1, tf1, set2, tf2, dgd_.settings, out);
+  if constexpr (S == DgdSolverType::CuttingPlane) {
+    dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
+                                        out);
+  }
 
   dgd::Transform3r tf1_t{tf1};
   opt_sols_.clear();
@@ -269,8 +320,11 @@ void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < nwarm_; ++i) {
-    dgd::internal::UpdateTransform(tf1_t, dx, drot);
-    dgd::GrowthDistance(set1, tf1_t, set2, tf2, dgd_.settings, out, true);
+    dgd::bench::UpdateTransform(tf1_t, dx, drot);
+    if constexpr (S == DgdSolverType::CuttingPlane) {
+      dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1_t, set2, tf2, dgd_.settings,
+                                          out, true);
+    }
     SetOptimalSolution(out, opt_sols_[i]);
   }
   timer_.Stop();
@@ -278,14 +332,14 @@ void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
 
   tf1_t = tf1;
   for (int i = 0; i < nwarm_; ++i) {
-    dgd::internal::UpdateTransform(tf1_t, dx, drot);
+    dgd::bench::UpdateTransform(tf1_t, dx, drot);
     SetOutput(opt_sols_[i], out);
     const auto err = dgd::ComputeSolutionError(set1, tf1_t, set2, tf2, out);
     BenchmarkResult res;
     res.solve_time = solve_time_avg;
     res.prim_dual_gap = err.prim_dual_gap;
-    res.prim_feas_err = err.prim_feas_err;
-    res.dual_feas_err = err.dual_feas_err;
+    res.prim_infeas_err = err.prim_infeas_err;
+    res.dual_infeas_err = err.dual_infeas_err;
     res.iter = opt_sols_[i].iter;
     res.optimal_flag = (out.status == dgd::SolutionStatus::CoincidentCenters) ||
                        (out.status == dgd::SolutionStatus::Optimal);
@@ -293,11 +347,18 @@ void BenchmarkInterface::DgdWarmStart(const dgd::ConvexSet<3>* set1,
   }
 }
 
-void BenchmarkInterface::SetDefaultRngSeed() const { dgd::SetDefaultSeed(); }
+template void BenchmarkInterface::DgdWarmStart<DgdSolverType::CuttingPlane,
+                                               DgdBcSolverType::Cramer>(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    const dgd::Vec3r& dx, const dgd::Rotation3r& drot,
+    BenchmarkResultArray& res_arr, dgd::WarmStartType ws_type);
 
-int BenchmarkInterface::RandomMeshIndex() const {
-  std::uniform_int_distribution<int> dis(0, nmeshes_ - 1);
-  return dis(dgd::generator);
-}
+template void BenchmarkInterface::DgdWarmStart<DgdSolverType::CuttingPlane,
+                                               DgdBcSolverType::LU>(
+    const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
+    const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
+    const dgd::Vec3r& dx, const dgd::Rotation3r& drot,
+    BenchmarkResultArray& res_arr, dgd::WarmStartType ws_type);
 
-}  // namespace internal
+}  // namespace bench

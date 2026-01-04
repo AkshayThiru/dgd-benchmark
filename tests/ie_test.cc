@@ -7,7 +7,7 @@
 #include "dgd/geometry/3d/cone.h"
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/mesh_loader.h"
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 #include "ie/internal_expanding.h"
 
 int main() {
@@ -18,19 +18,22 @@ int main() {
 
   // Mesh set.
   dgd::MeshLoader ml{};
-  ml.LoadObj("../assets/rock_lowpoly.obj");
+  ml.LoadObj("../assets/006_mustard_bottle.obj");
   std::vector<dgd::Vec3r> vert;
   std::vector<int> graph;
   ml.MakeVertexGraph(vert, graph);
   dgd::Vec3r center;
   const double inradius = ml.ComputeInradius(center);
   for (auto& v : vert) v -= center;
-  dgd::ConvexSet<3>* set2 = new dgd::Mesh(vert, graph, 0.1, inradius);
+  dgd::ConvexSet<3>* set2 = new dgd::Mesh(vert, graph, inradius, 0.1);
+
+  dgd::Rng rng;
+  rng.SetRandomSeed();
 
   // Rigid body transform.
   dgd::Transform3r tf1, tf2;
-  dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf1);
-  dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
+  rng.RandomTransform(-5.0, 5.0, tf1);
+  rng.RandomTransform(-5.0, 5.0, tf2);
 
   // Growth distance.
   const ie::Settings settings{};
@@ -38,11 +41,13 @@ int main() {
   const double gd{ie::GrowthDistance(set1, tf1, set2, tf2, settings, out)};
   auto err = ie::ComputeSolutionError(set1, tf1, set2, tf2, out);
 
-  std::cout << "Growth distance         : " << gd << std::endl
-            << "Primal feasibility error: " << err.prim_feas_err << " m"
+  std::cout << "Growth distance               : " << gd << std::endl
+            << "Primal infeasibility error (m): " << err.prim_infeas_err
             << std::endl
-            << "Dual feasibility error  : " << err.dual_feas_err << std::endl
-            << "Primal dual gap         : " << err.prim_dual_gap << std::endl;
+            << "Dual infeasibility error      : " << err.dual_infeas_err
+            << std::endl
+            << "Primal dual gap               : " << err.prim_dual_gap
+            << std::endl;
 
   delete set1;
   delete set2;

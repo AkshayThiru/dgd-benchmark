@@ -353,10 +353,10 @@ double GrowthDistanceSolver::GrowthDistance(const Polyhedron* set1,
                                             const Transform3& tf2, Output& out,
                                             bool warm_start) {
   const Polyhedron* sets[2] = {set1, set2};
-  p_[0] = tf1.block<3, 1>(0, 3);
-  p_[1] = tf2.block<3, 1>(0, 3);
-  R_[0] = tf1.block<3, 3>(0, 0);
-  R_[1] = tf2.block<3, 3>(0, 0);
+  p_[0] = Affine(tf1);
+  p_[1] = Affine(tf2);
+  R_[0] = Linear(tf1);
+  R_[1] = Linear(tf2);
   out.iter = 0;
 
   // Check center distance.

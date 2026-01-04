@@ -57,9 +57,9 @@ for nrow in nrows
       x, s, z, iter = custom_solve_socp(c, G, h, idx_ort, idx_soc1, idx_soc2; pdip_tol = pdip_tol)
       # Compute solution errors
       prim_dual_gap = dot(s, z)
-      prim_feas_err = norm(G*x + s - h)
+      prim_infeas_err = norm(G*x + s - h)
       solve_time = @belapsed dc.proximity($set1, $set2; verbose = false, pdip_tol = pdip_tol) samples=bm_samples seconds=max_bm_time_per_run
-      add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_feas_err, iter; polytope_size = nrow)
+      add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_infeas_err, iter; polytope_size = nrow)
       ProgressBars.update(pbar)
     end
   end
@@ -68,4 +68,4 @@ end
 save_to_feather_file(res_arr, joinpath(log_path, "polytope_bm__cold_dcol.feather"), true)
 println("Avg. solve time (us): ", mean(res_arr.solve_times))
 println("Max. prim dual gap  : ", maximum(res_arr.prim_dual_gaps))
-println("Max. prim feas err  : ", maximum(res_arr.prim_feas_errs))
+println("Max. prim infeas err: ", maximum(res_arr.prim_infeas_errs))

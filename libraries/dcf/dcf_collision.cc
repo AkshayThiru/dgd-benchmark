@@ -172,29 +172,30 @@ SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,
                                    const Transform3& tf2, Output& out) {
   SolutionError err = SolutionError{};
   if (out.status == SolutionStatus::CoincidentCenters) {
-    err.prim_dual_gap = err.prim_feas_err = 0.0;
+    err.prim_dual_gap = err.prim_infeas_err = 0.0;
     return err;
   } else if (out.status != SolutionStatus::Optimal) {
-    // The algorithm often reaches the maximum number of iterations without
-    // convergence.
-    // err.prim_dual_gap = err.prim_feas_err = kInf;
-    // return err;
+    // The algorithm does not maintain a primal feasible solution.
+    err.prim_dual_gap = err.prim_infeas_err = kInf;
+    return err;
   }
 
   const Vec3 pos1 = tf1.block<3, 1>(0, 3), pos2 = tf2.block<3, 1>(0, 3);
   const Rotation3 R1 = tf1.block<3, 3>(0, 0), R2 = tf2.block<3, 3>(0, 0);
   const DCF& dcf = out.dcf;
   const Vec3 normal = dcf.normal, q_bar = pos1 - pos2;
+  const double q_bar_norm = q_bar.norm();
 
   Vec3 s1, s2;
   dsf1->SupportFunction(normal, pos1, R1, s1);
   dsf2->SupportFunction(-normal, pos2, R2, s2);
   const double sv1 = (s1 - pos1).dot(normal), sv2 = (s2 - pos2).dot(-normal);
-  const double gap_prim = q_bar.norm() / (s1 - s2 - q_bar).norm();
+  const double gap_prim = q_bar_norm / (s1 - s2 - q_bar).norm();
   const double gap_dual = -q_bar.dot(normal) / (sv1 + sv2);
 
   err.prim_dual_gap = std::abs(gap_prim / gap_dual - 1.0);
-  err.prim_feas_err = (q_bar + dcf.gap * (dcf.p1 - dcf.p2 - q_bar)).norm();
+  err.prim_infeas_err =
+      (q_bar + dcf.gap * (dcf.p1 - dcf.p2 - q_bar)).norm() / q_bar_norm;
   return err;
 }
 

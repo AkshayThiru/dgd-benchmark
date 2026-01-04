@@ -13,11 +13,13 @@ inline void Quaternion2RotationSe3(const Vec<7>& tfq, Transform3& tf) {
 }
 
 // Hat map.
-inline void Skew(const Vec3& w, Mat3& W) {
-  W << 0.0, -w(2), w(1), w(2), 0.0, -w(0), -w(1), w(0), 0.0;
+inline Mat3 Skew(const Vec3& w) {
+  Mat3 m;
+  m << 0.0, -w(2), w(1), w(2), 0.0, -w(0), -w(1), w(0), 0.0;
+  return m;
 }
 
-// Exponentiation function
+// Exponentiation function.
 template <unsigned int exp>
 inline double Power(double base) {
   const double half_power = Power<exp / 2>(base);

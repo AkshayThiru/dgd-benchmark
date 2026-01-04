@@ -5,7 +5,7 @@
 #include "dcf/dcf_collision.h"
 #include "dcf/dsf_interface.h"
 #include "dgd/mesh_loader.h"
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 
 double LoadObj(std::string filename, std::vector<dcf::Vec3>& vert) {
   dgd::MeshLoader ml{};
@@ -32,12 +32,15 @@ int main() {
   inradius = LoadObj("../assets/006_mustard_bottle.obj", vert);
   auto set2 = new dcf::VDSFInterface<exp>(vert, inradius, margin);
 
-  set1->VDSFPtr()->PrintInfo();
+  set1->PrintInfo();
+
+  dgd::Rng rng;
+  rng.SetRandomSeed();
 
   // Rigid body transforms.
   dcf::Transform3 tf1, tf2;
-  dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf1);
-  dgd::RandomRigidBodyTransform<3>(-5.0, 5.0, tf2);
+  rng.RandomTransform(-5.0, 5.0, tf1);
+  rng.RandomTransform(-5.0, 5.0, tf2);
 
   // Growth distance.
   dcf::Settings settings{};
@@ -47,12 +50,14 @@ int main() {
   auto err = dcf::ComputeSolutionError(set1->VDSFPtr(), tf1, set2->VDSFPtr(),
                                        tf2, out);
 
-  std::cout << "Growth distance         : " << gd << std::endl
-            << "Primal feasibility error: " << err.prim_feas_err << " m"
+  std::cout << "Growth distance               : " << gd << std::endl
+            << "Primal infeasibility error (m): " << err.prim_infeas_err
             << std::endl
-            << "Dual feasibility error  : " << err.dual_feas_err << std::endl
-            << "Primal dual gap         : " << err.prim_dual_gap << std::endl
-            << "Iterations              : " << out.iter << std::endl;
+            << "Dual infeasibility error      : " << err.dual_infeas_err
+            << std::endl
+            << "Primal dual gap               : " << err.prim_dual_gap
+            << std::endl
+            << "Iterations                    : " << out.iter << std::endl;
 
   delete set1;
   delete set2;

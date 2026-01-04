@@ -3,7 +3,8 @@
 #include "dgd/geometry/convex_set.h"
 #include "helpers/benchmark_interface.h"
 #include "helpers/benchmark_result.h"
-#include "internal_helpers/utils.h"
+#include "internal_helpers/filesystem_utils.h"
+#include "internal_helpers/math_utils.h"
 
 // Constants.
 const double position_lim = 5.0;
@@ -19,30 +20,45 @@ int main(int argc, char** argv) {
   }
 
   const std::string log_path = argv[1];
-  if (!dgd::internal::IsValidDirectory(log_path)) {
+  if (!dgd::bench::IsValidDirectory(log_path)) {
     std::cerr << "Invalid log directory" << std::endl;
     return EXIT_FAILURE;
   }
 
-  internal::BenchmarkInterface interface(ncold, nwarm);
+  bench::BenchmarkInterface interface(ncold, nwarm);
+  interface.SetRngSeed();
+
+  using bench::DgdBcSolverType;
+  using bench::DgdSolverType;
 
   dgd::Transform3r tf1, tf2;
 
   /**
    * Cold-start benchmarks.
    */
-  internal::BenchmarkResultArray res_ie_c(npair * npose_c);
-  internal::BenchmarkResultArray res_dgd_c(npair * npose_c);
+  bench::BenchmarkResultArray res_ie_c(npair * npose_c);
+  bench::BenchmarkResultArray res_dgd_c_cp_cr(npair * npose_c);
+  bench::BenchmarkResultArray res_dgd_c_cp_lu(npair * npose_c);
+  bench::BenchmarkResultArray res_dgd_c_trn(npair * npose_c);
   for (int i = 0; i < npair; ++i) {
-    const dgd::ConvexSet<3>* set1 = interface.RandomCurvedPrimitiveSet().get();
-    const dgd::ConvexSet<3>* set2 = interface.RandomCurvedPrimitiveSet().get();
+    const auto set1 = interface.RandomCurvedPrimitiveSet();
+    const auto set2 = interface.RandomCurvedPrimitiveSet();
     for (int j = 0; j < npose_c; ++j) {
-      dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
-                                           position_lim);
+      dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
+                                      position_lim);
       // IE benchmark.
-      interface.IeColdStart(set1, tf1, set2, tf2, res_ie_c);
-      // DGD benchmark.
-      interface.DgdColdStart(set1, tf1, set2, tf2, res_dgd_c);
+      interface.IeColdStart(set1.get(), tf1, set2.get(), tf2, res_ie_c);
+      // DGD benchmark (cutting plane, Cramer's rule).
+      interface.DgdColdStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(
+          set1.get(), tf1, set2.get(), tf2, res_dgd_c_cp_cr);
+      // DGD benchmark (cutting plane, LU).
+      interface.DgdColdStart<DgdSolverType::CuttingPlane, DgdBcSolverType::LU>(
+          set1.get(), tf1, set2.get(), tf2, res_dgd_c_cp_lu);
+      // DGD benchmark (trust region Newton).
+      interface.DgdColdStart<DgdSolverType::TrustRegionNewton,
+                             DgdBcSolverType::LU>(set1.get(), tf1, set2.get(),
+                                                  tf2, res_dgd_c_trn);
     }
   }
 
@@ -50,29 +66,78 @@ int main(int argc, char** argv) {
   res_ie_c.SaveToFile(log_path + "primitive_bm__cold_ie.feather");
   res_ie_c.PrintStatistics();
 
-  std::cout << "DGD (cold-start):" << std::endl;
-  res_dgd_c.SaveToFile(log_path + "primitive_bm__cold_dgd.feather");
-  res_dgd_c.PrintStatistics();
+  std::cout << "DGD (cold-start, cutting plane, Cramer's rule):" << std::endl;
+  res_dgd_c_cp_cr.SaveToFile(log_path +
+                             "primitive_bm__cold_dgd_cp_cramer.feather");
+  res_dgd_c_cp_cr.PrintStatistics();
+
+  std::cout << "DGD (cold-start, cutting plane, LU):" << std::endl;
+  res_dgd_c_cp_lu.SaveToFile(log_path + "primitive_bm__cold_dgd_cp_lu.feather");
+  res_dgd_c_cp_lu.PrintStatistics();
+
+  std::cout << "DGD (cold-start, trust region Newton):" << std::endl;
+  res_dgd_c_trn.SaveToFile(log_path + "primitive_bm__cold_dgd_trn.feather");
+  res_dgd_c_trn.PrintStatistics();
 
   /**
    * Warm-start benchmarks.
    */
+  using dgd::WarmStartType;
+
   dgd::Vec3r dx;
   dgd::Rotation3r drot;
-  internal::BenchmarkResultArray res_dgd_w(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_p_cr(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_p_lu(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_d_cr(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_d_lu(npair * npose_w * nwarm);
   for (int i = 0; i < npair; ++i) {
-    const dgd::ConvexSet<3>* set1 = interface.RandomCurvedPrimitiveSet().get();
-    const dgd::ConvexSet<3>* set2 = interface.RandomCurvedPrimitiveSet().get();
+    const auto set1 = interface.RandomCurvedPrimitiveSet();
+    const auto set2 = interface.RandomCurvedPrimitiveSet();
     for (int j = 0; j < npose_w; ++j) {
-      dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
-                                           position_lim);
-      dgd::internal::SetRandomScrew(dx, drot, dx_max, ang_max);
-      // DGD benchmark.
-      interface.DgdWarmStart(set1, tf1, set2, tf2, dx, drot, res_dgd_w);
+      dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
+                                      position_lim);
+      dgd::bench::SetRandomDisplacement(interface.rng(), dx, drot, dx_max,
+                                        ang_max);
+      // DGD benchmark (primal warm start, cutting plane, Cramer's rule).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(
+          set1.get(), tf1, set2.get(), tf2, dx, drot, res_dgd_w_p_cr,
+          WarmStartType::Primal);
+      // DGD benchmark (primal warm start, cutting plane, LU).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane, DgdBcSolverType::LU>(
+          set1.get(), tf1, set2.get(), tf2, dx, drot, res_dgd_w_p_lu,
+          WarmStartType::Primal);
+      // DGD benchmark (dual warm start, cutting plane, Cramer's rule).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(
+          set1.get(), tf1, set2.get(), tf2, dx, drot, res_dgd_w_d_cr,
+          WarmStartType::Dual);
+      // DGD benchmark (dual warm start, cutting plane, LU).
+      interface.DgdWarmStart<DgdSolverType::CuttingPlane, DgdBcSolverType::LU>(
+          set1.get(), tf1, set2.get(), tf2, dx, drot, res_dgd_w_d_lu,
+          WarmStartType::Dual);
     }
   }
 
-  std::cout << "DGD (warm-start):" << std::endl;
-  res_dgd_w.SaveToFile(log_path + "primitive_bm__warm_dgd.feather");
-  res_dgd_w.PrintStatistics();
+  std::cout << "DGD (primal warm start, cutting plane, Cramer's rule):"
+            << std::endl;
+  res_dgd_w_p_cr.SaveToFile(log_path +
+                            "primitive_bm__warm_dgd_primal_cp_cramer.feather");
+  res_dgd_w_p_cr.PrintStatistics();
+
+  std::cout << "DGD (primal warm start, cutting plane, LU):" << std::endl;
+  res_dgd_w_p_lu.SaveToFile(log_path +
+                            "primitive_bm__warm_dgd_primal_cp_lu.feather");
+  res_dgd_w_p_lu.PrintStatistics();
+
+  std::cout << "DGD (dual warm start, cutting plane, Cramer's rule):"
+            << std::endl;
+  res_dgd_w_d_cr.SaveToFile(log_path +
+                            "primitive_bm__warm_dgd_dual_cp_cramer.feather");
+  res_dgd_w_d_cr.PrintStatistics();
+
+  std::cout << "DGD (dual warm start, cutting plane, LU):" << std::endl;
+  res_dgd_w_d_lu.SaveToFile(log_path +
+                            "primitive_bm__warm_dgd_dual_cp_lu.feather");
+  res_dgd_w_d_lu.PrintStatistics();
 }

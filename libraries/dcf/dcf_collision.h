@@ -12,7 +12,7 @@ namespace dcf {
 // Solver settings.
 struct Settings {
   double min_center_dist = kSqrtEps;
-  double tol = kSqrtEps;
+  double tol = kSqrtEps;  // Relative tolerance.
   int max_iter = 50;
   int ie_iter = 4;
 };
@@ -29,7 +29,7 @@ struct DCF {
 };
 
 // Solution status.
-enum class SolutionStatus : uint8_t {
+enum class SolutionStatus {
   Optimal,
   MaxIterReached,
   CoincidentCenters,
@@ -59,8 +59,8 @@ inline double GrowthDistance(DSF* dsf1, const Vec<7>& tfq1, DSF* dsf2,
 // Solution error.
 struct SolutionError {
   double prim_dual_gap;
-  double prim_feas_err;
-  double dual_feas_err = 0.0;
+  double prim_infeas_err;
+  double dual_infeas_err = 0.0;
 };
 
 SolutionError ComputeSolutionError(DSF* dsf1, const Transform3& tf1, DSF* dsf2,

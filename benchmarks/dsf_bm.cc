@@ -3,7 +3,8 @@
 #include "dgd/geometry/convex_set.h"
 #include "helpers/benchmark_interface.h"
 #include "helpers/benchmark_result.h"
-#include "internal_helpers/utils.h"
+#include "internal_helpers/filesystem_utils.h"
+#include "internal_helpers/math_utils.h"
 
 // Constants.
 const double position_lim = 5.0;
@@ -18,25 +19,30 @@ int main(int argc, char** argv) {
   }
 
   const std::string asset_path = argv[1], log_path = argv[2];
-  if (!dgd::internal::IsValidDirectory(asset_path) ||
-      !dgd::internal::IsValidDirectory(log_path)) {
+  if (!dgd::bench::IsValidDirectory(asset_path) ||
+      !dgd::bench::IsValidDirectory(log_path)) {
     std::cerr << "Invalid asset or log directory" << std::endl;
     return EXIT_FAILURE;
   }
 
-  std::vector<std::string> filenames;
-  dgd::internal::GetObjFileNames(asset_path, filenames);
+  const auto filenames = dgd::bench::GetObjFileNames(asset_path);
 
-  internal::BenchmarkInterface interface(ncold, 0);
+  bench::BenchmarkInterface interface(ncold, 0);
   interface.LoadMeshesFromObjFiles(filenames);
   if (interface.nmeshes() < 2) {
     std::cerr << "At least two .obj files are required" << std::endl;
     return EXIT_FAILURE;
   }
+  interface.SetRngSeed();
 
-  internal::BenchmarkResultArray res_dcf(npair * npose);
-  internal::BenchmarkResultArray res_ie(npair * npose);
-  internal::BenchmarkResultArray res_dgd(npair * npose);
+  using bench::DgdBcSolverType;
+  using bench::DgdSolverType;
+
+  bench::BenchmarkResultArray res_dcf(npair * npose);
+  bench::BenchmarkResultArray res_ie(npair * npose);
+  bench::BenchmarkResultArray res_dgd_cp_cr(npair * npose);
+  bench::BenchmarkResultArray res_dgd_cp_lu(npair * npose);
+  bench::BenchmarkResultArray res_dgd_trn(npair * npose);
   dgd::ConvexSet<3>*set1, *set2;
   int set1_idx, set2_idx;
   dgd::Transform3r tf1, tf2;
@@ -48,14 +54,23 @@ int main(int argc, char** argv) {
     set1 = interface.vdsfs()[set1_idx].get();
     set2 = interface.vdsfs()[set2_idx].get();
     for (int j = 0; j < npose; ++j) {
-      dgd::internal::SetRandomTransform<3>(tf1, tf2, -position_lim,
-                                           position_lim);
+      dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
+                                      position_lim);
       // DCF benchmark.
       interface.DcfColdStart(set1_idx, tf1, set2_idx, tf2, res_dcf);
       // IE benchmark.
       interface.IeColdStart(set1, tf1, set2, tf2, res_ie);
-      // DGD benchmark.
-      interface.DgdColdStart(set1, tf1, set2, tf2, res_dgd);
+      // DGD benchmark (cutting plane, Cramer's rule).
+      interface.DgdColdStart<DgdSolverType::CuttingPlane,
+                             DgdBcSolverType::Cramer>(set1, tf1, set2, tf2,
+                                                      res_dgd_cp_cr);
+      // DGD benchmark (cutting plane, LU).
+      interface.DgdColdStart<DgdSolverType::CuttingPlane, DgdBcSolverType::LU>(
+          set1, tf1, set2, tf2, res_dgd_cp_lu);
+      // DGD benchmark (trust region Newton).
+      interface.DgdColdStart<DgdSolverType::TrustRegionNewton,
+                             DgdBcSolverType::LU>(set1, tf1, set2, tf2,
+                                                  res_dgd_trn);
     }
   }
 
@@ -67,7 +82,15 @@ int main(int argc, char** argv) {
   res_ie.SaveToFile(log_path + "dsf_bm__cold_ie.feather");
   res_ie.PrintStatistics();
 
-  std::cout << "DGD:" << std::endl;
-  res_dgd.SaveToFile(log_path + "dsf_bm__cold_dgd.feather");
-  res_dgd.PrintStatistics();
+  std::cout << "DGD (cutting plane, Cramer's rule):" << std::endl;
+  res_dgd_cp_cr.SaveToFile(log_path + "dsf_bm__cold_dgd_cp_cramer.feather");
+  res_dgd_cp_cr.PrintStatistics();
+
+  std::cout << "DGD (cutting plane, LU):" << std::endl;
+  res_dgd_cp_lu.SaveToFile(log_path + "dsf_bm__cold_dgd_cp_lu.feather");
+  res_dgd_cp_lu.PrintStatistics();
+
+  std::cout << "DGD (trust region Newton):" << std::endl;
+  res_dgd_trn.SaveToFile(log_path + "dsf_bm__cold_dgd_trn.feather");
+  res_dgd_trn.PrintStatistics();
 }

@@ -10,9 +10,9 @@
 
 namespace dcf {
 
-const double kInf = std::numeric_limits<double>::infinity();
-const double kEps = std::numeric_limits<double>::epsilon();
-const double kSqrtEps = std::sqrt(kEps);
+constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kEps = std::numeric_limits<double>::epsilon();
+inline const double kSqrtEps = std::sqrt(kEps);
 
 #define COUT_CHECK std::cout << "CHECK" << std::endl;
 #define COUT_SCALAR(val)                                                 \
@@ -32,7 +32,7 @@ const double kSqrtEps = std::sqrt(kEps);
   } while (0)
 
 template <int dim>
-using Vec = Eigen::Vector<double, dim>;
+using Vec = Eigen::Matrix<double, dim, 1>;
 using Vec3 = Eigen::Vector3d;
 using Vec4 = Eigen::Vector4d;
 

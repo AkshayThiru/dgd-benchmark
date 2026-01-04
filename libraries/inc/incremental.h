@@ -3,7 +3,6 @@
 
 #include <Eigen/Dense>
 #include <array>
-#include <cstdint>
 
 #include "inc/data_types.h"
 #include "inc/linear_solver.h"
@@ -26,7 +25,7 @@ struct Settings {
 };
 
 // Algorithm entry point.
-enum class EntryPoint : uint8_t {
+enum class EntryPoint {
   IZ,   // Initialization.
   FFD,  // Face-face descent.
   FED,  // Face-edge descent.
@@ -34,7 +33,7 @@ enum class EntryPoint : uint8_t {
 };
 
 // Solution status.
-enum class SolutionStatus : uint8_t {
+enum class SolutionStatus {
   NoError_,  // Internal.
   Optimal,
   CoincidentCenters,
