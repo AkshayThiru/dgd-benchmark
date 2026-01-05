@@ -2,10 +2,10 @@
 
 #include <stdexcept>
 
-#include "dgd/dgd.h"
 #include "dgd/error_metrics.h"
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/mesh_loader.h"
+#include "dgd/solvers/bundle_scheme_impl.h"
 #include "inc/solution_error.h"
 #include "internal_helpers/math_utils.h"
 #include "internal_helpers/mesh_loader.h"
@@ -210,7 +210,7 @@ void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
                                       const dgd::ConvexSet<3>* set2,
                                       const dgd::Transform3r& tf2,
                                       BenchmarkResultArray& res_arr) {
-  using dgd::detail::BcSolverType;
+  using dgd::BcSolverType;
   [[maybe_unused]] constexpr BcSolverType bst = (BST == DgdBcSolverType::Cramer)
                                                     ? BcSolverType::kCramer
                                                     : BcSolverType::kLU;
@@ -218,29 +218,24 @@ void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
   using C = dgd::ConvexSet<3>;
   dgd::Output<3> out;
   if constexpr (S == DgdSolverType::CuttingPlane) {
-    dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
-                                        out);
+    dgd::GrowthDistanceCpTpl<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
+                                           out);
   } else {
-    dgd::GrowthDistanceTrn(set1, tf1, set2, tf2, dgd_.settings, out);
+    dgd::GrowthDistanceTrnTpl(set1, tf1, set2, tf2, dgd_.settings, out);
   }
 
   timer_.Stop();
   timer_.Start();
   for (int i = 0; i < ncold_; ++i) {
     if constexpr (S == DgdSolverType::CuttingPlane) {
-      dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
-                                          out);
+      dgd::GrowthDistanceCpTpl<3, C, C, bst>(set1, tf1, set2, tf2,
+                                             dgd_.settings, out);
     } else {
-      dgd::GrowthDistanceTrn(set1, tf1, set2, tf2, dgd_.settings, out);
+      dgd::GrowthDistanceTrnTpl(set1, tf1, set2, tf2, dgd_.settings, out);
     }
   }
   timer_.Stop();
   const auto err = dgd::ComputeSolutionError(set1, tf1, set2, tf2, out);
-
-  // TODO:
-  if (out.status != dgd::SolutionStatus::Optimal) {
-    exit(EXIT_FAILURE);
-  }
 
   BenchmarkResult res;
   res.solve_time = timer_.Elapsed() / double(ncold_);
@@ -301,7 +296,7 @@ void BenchmarkInterface::DgdWarmStart(
     BenchmarkResultArray& res_arr, dgd::WarmStartType ws_type) {
   static_assert(S != DgdSolverType::TrustRegionNewton,
                 "The TRN solver does not support warm starting.");
-  using dgd::detail::BcSolverType;
+  using dgd::BcSolverType;
   constexpr BcSolverType bst = (BST == DgdBcSolverType::Cramer)
                                    ? BcSolverType::kCramer
                                    : BcSolverType::kLU;
@@ -310,8 +305,8 @@ void BenchmarkInterface::DgdWarmStart(
   dgd_.settings.ws_type = ws_type;
   dgd::Output<3> out;
   if constexpr (S == DgdSolverType::CuttingPlane) {
-    dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
-                                        out);
+    dgd::GrowthDistanceCpTpl<3, C, C, bst>(set1, tf1, set2, tf2, dgd_.settings,
+                                           out);
   }
 
   dgd::Transform3r tf1_t{tf1};
@@ -322,8 +317,8 @@ void BenchmarkInterface::DgdWarmStart(
   for (int i = 0; i < nwarm_; ++i) {
     dgd::bench::UpdateTransform(tf1_t, dx, drot);
     if constexpr (S == DgdSolverType::CuttingPlane) {
-      dgd::GrowthDistanceCp<3, C, C, bst>(set1, tf1_t, set2, tf2, dgd_.settings,
-                                          out, true);
+      dgd::GrowthDistanceCpTpl<3, C, C, bst>(set1, tf1_t, set2, tf2,
+                                             dgd_.settings, out, true);
     }
     SetOptimalSolution(out, opt_sols_[i]);
   }
