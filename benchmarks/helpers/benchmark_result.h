@@ -15,7 +15,7 @@ struct BenchmarkResult {
   double prim_dual_gap;  // Relative primal-dual gap.
   double prim_infeas_err;
   double dual_infeas_err;
-  int iter;
+  double iter;
   bool optimal_flag;
 };
 
@@ -25,7 +25,7 @@ struct BenchmarkResultArray {
   std::vector<double> prim_dual_gaps;
   std::vector<double> prim_infeas_errs;
   std::vector<double> dual_infeas_errs;
-  std::vector<int> iters;
+  std::vector<double> iters;
   std::vector<bool> optimal_flags;
   int size;
   int idx;

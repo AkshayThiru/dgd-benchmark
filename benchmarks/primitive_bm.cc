@@ -86,10 +86,10 @@ int main(int argc, char** argv) {
 
   dgd::Vec3r dx;
   dgd::Rotation3r drot;
-  bench::BenchmarkResultArray res_dgd_w_p_cr(npair * npose_w * nwarm);
-  bench::BenchmarkResultArray res_dgd_w_p_lu(npair * npose_w * nwarm);
-  bench::BenchmarkResultArray res_dgd_w_d_cr(npair * npose_w * nwarm);
-  bench::BenchmarkResultArray res_dgd_w_d_lu(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_dgd_w_p_cr(npair * npose_w);
+  bench::BenchmarkResultArray res_dgd_w_p_lu(npair * npose_w);
+  bench::BenchmarkResultArray res_dgd_w_d_cr(npair * npose_w);
+  bench::BenchmarkResultArray res_dgd_w_d_lu(npair * npose_w);
   for (int i = 0; i < npair; ++i) {
     const auto set1 = interface.RandomCurvedPrimitiveSet();
     const auto set2 = interface.RandomCurvedPrimitiveSet();

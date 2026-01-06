@@ -89,9 +89,9 @@ int main(int argc, char** argv) {
 
   dgd::Vec3r dx;
   dgd::Rotation3r drot;
-  bench::BenchmarkResultArray res_inc_w(npair * npose_w * nwarm);
-  bench::BenchmarkResultArray res_dgd_w_p(npair * npose_w * nwarm);
-  bench::BenchmarkResultArray res_dgd_w_d(npair * npose_w * nwarm);
+  bench::BenchmarkResultArray res_inc_w(npair * npose_w);
+  bench::BenchmarkResultArray res_dgd_w_p(npair * npose_w);
+  bench::BenchmarkResultArray res_dgd_w_d(npair * npose_w);
   for (int i = 0; i < npair; ++i) {
     set1_idx = interface.RandomMeshIndex();
     set2_idx = interface.RandomMeshIndex();

@@ -22,7 +22,7 @@ arrow::Result<std::shared_ptr<arrow::Array>> MakeDoubleArray(
 }
 
 // Assumes int maps to arrow::int32().
-arrow::Result<std::shared_ptr<arrow::Array>> MakeInt32Array(
+[[maybe_unused]] arrow::Result<std::shared_ptr<arrow::Array>> MakeInt32Array(
     const std::vector<int>& data) {
   arrow::Int32Builder builder;
   ARROW_RETURN_NOT_OK(builder.AppendValues(data.data(), data.size()));
@@ -51,7 +51,7 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
                      arrow::field("prim_dual_gap", arrow::float64()),
                      arrow::field("prim_infeas_err", arrow::float64()),
                      arrow::field("dual_infeas_err", arrow::float64()),
-                     arrow::field("iter", arrow::int32()),
+                     arrow::field("iter", arrow::float64()),
                      arrow::field("optimal", arrow::boolean())});
 
   std::shared_ptr<arrow::Array> solve_time_array;
@@ -70,7 +70,7 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
                         MakeDoubleArray(res_arr.dual_infeas_errs));
 
   std::shared_ptr<arrow::Array> iter_array;
-  ARROW_ASSIGN_OR_RAISE(iter_array, MakeInt32Array(res_arr.iters));
+  ARROW_ASSIGN_OR_RAISE(iter_array, MakeDoubleArray(res_arr.iters));
 
   std::shared_ptr<arrow::Array> optimal_flag_array;
   ARROW_ASSIGN_OR_RAISE(optimal_flag_array,

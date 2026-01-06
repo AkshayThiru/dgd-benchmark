@@ -71,7 +71,7 @@ void BenchmarkInterface::DcfColdStart(int set1_idx, const dcf::Transform3& tf1,
   res.prim_dual_gap = err.prim_dual_gap;
   res.prim_infeas_err = err.prim_infeas_err;
   res.dual_infeas_err = err.dual_infeas_err;
-  res.iter = out.iter;
+  res.iter = double(out.iter);
   res.optimal_flag = (out.status == dcf::SolutionStatus::CoincidentCenters) ||
                      (out.status == dcf::SolutionStatus::Optimal);
   res_arr.AddResult(res);
@@ -98,7 +98,7 @@ void BenchmarkInterface::IeColdStart(const dgd::ConvexSet<3>* set1,
   res.prim_dual_gap = err.prim_dual_gap;
   res.prim_infeas_err = err.prim_infeas_err;
   res.dual_infeas_err = err.dual_infeas_err;
-  res.iter = out.iter;
+  res.iter = double(out.iter);
   res.optimal_flag = (out.status == ie::SolutionStatus::CoincidentCenters) ||
                      (out.status == ie::SolutionStatus::Optimal);
   res_arr.AddResult(res);
@@ -130,7 +130,7 @@ void BenchmarkInterface::IncColdStart(int set1_idx, const inc::Transform3& tf1,
   res.prim_dual_gap = err.prim_dual_gap;
   res.prim_infeas_err = err.prim_infeas_err;
   res.dual_infeas_err = err.dual_infeas_err;
-  res.iter = out.iter;
+  res.iter = double(out.iter);
   res.optimal_flag = (out.status == inc::SolutionStatus::CoincidentCenters) ||
                      (out.status == inc::SolutionStatus::Optimal);
   res_arr.AddResult(res);
@@ -188,20 +188,26 @@ void BenchmarkInterface::IncWarmStart(int set1_idx, const inc::Transform3& tf1,
   const dgd::ConvexSet<3>* set1_v = generator_->meshes()[set1_idx].get();
   const dgd::ConvexSet<3>* set2_v = generator_->meshes()[set2_idx].get();
   tf1_t = tf1;
+  BenchmarkResult res;
+  res.solve_time = solve_time_avg;
+  res.prim_dual_gap = res.prim_infeas_err = res.dual_infeas_err = 0.0;
+  res.iter = 0.0;
+  res.optimal_flag = true;
   for (int i = 0; i < nwarm_; ++i) {
     dgd::bench::UpdateTransform(tf1_t, dx, drot);
     SetOutput(opt_sols_[i], out);
     const auto err = inc::ComputeSolutionError(set1_v, tf1_t, set2_v, tf2, out);
-    BenchmarkResult res;
-    res.solve_time = solve_time_avg;
-    res.prim_dual_gap = err.prim_dual_gap;
-    res.prim_infeas_err = err.prim_infeas_err;
-    res.dual_infeas_err = err.dual_infeas_err;
-    res.iter = opt_sols_[i].iter;
-    res.optimal_flag = (out.status == inc::SolutionStatus::CoincidentCenters) ||
-                       (out.status == inc::SolutionStatus::Optimal);
-    res_arr.AddResult(res);
+    res.prim_dual_gap = std::max(res.prim_dual_gap, err.prim_dual_gap);
+    res.prim_infeas_err = std::max(res.prim_infeas_err, err.prim_infeas_err);
+    res.dual_infeas_err = std::max(res.dual_infeas_err, err.dual_infeas_err);
+    res.iter += double(opt_sols_[i].iter);
+    res.optimal_flag =
+        res.optimal_flag &&
+        ((out.status == inc::SolutionStatus::CoincidentCenters) ||
+         (out.status == inc::SolutionStatus::Optimal));
   }
+  res.iter /= double(nwarm_);
+  res_arr.AddResult(res);
 }
 
 template <DgdSolverType S, DgdBcSolverType BST>
@@ -242,7 +248,7 @@ void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
   res.prim_dual_gap = err.prim_dual_gap;
   res.prim_infeas_err = err.prim_infeas_err;
   res.dual_infeas_err = err.dual_infeas_err;
-  res.iter = out.iter;
+  res.iter = double(out.iter);
   res.optimal_flag = (out.status == dgd::SolutionStatus::CoincidentCenters) ||
                      (out.status == dgd::SolutionStatus::Optimal);
   res_arr.AddResult(res);
@@ -326,20 +332,26 @@ void BenchmarkInterface::DgdWarmStart(
   const double solve_time_avg = timer_.Elapsed() / double(nwarm_);
 
   tf1_t = tf1;
+  BenchmarkResult res;
+  res.solve_time = solve_time_avg;
+  res.prim_dual_gap = res.prim_infeas_err = res.dual_infeas_err = 0.0;
+  res.iter = 0.0;
+  res.optimal_flag = true;
   for (int i = 0; i < nwarm_; ++i) {
     dgd::bench::UpdateTransform(tf1_t, dx, drot);
     SetOutput(opt_sols_[i], out);
     const auto err = dgd::ComputeSolutionError(set1, tf1_t, set2, tf2, out);
-    BenchmarkResult res;
-    res.solve_time = solve_time_avg;
-    res.prim_dual_gap = err.prim_dual_gap;
-    res.prim_infeas_err = err.prim_infeas_err;
-    res.dual_infeas_err = err.dual_infeas_err;
-    res.iter = opt_sols_[i].iter;
-    res.optimal_flag = (out.status == dgd::SolutionStatus::CoincidentCenters) ||
-                       (out.status == dgd::SolutionStatus::Optimal);
-    res_arr.AddResult(res);
+    res.prim_dual_gap = std::max(res.prim_dual_gap, err.prim_dual_gap);
+    res.prim_infeas_err = std::max(res.prim_infeas_err, err.prim_infeas_err);
+    res.dual_infeas_err = std::max(res.dual_infeas_err, err.dual_infeas_err);
+    res.iter += double(opt_sols_[i].iter);
+    res.optimal_flag =
+        res.optimal_flag &&
+        ((out.status == dgd::SolutionStatus::CoincidentCenters) ||
+         (out.status == dgd::SolutionStatus::Optimal));
   }
+  res.iter /= double(nwarm_);
+  res_arr.AddResult(res);
 }
 
 template void BenchmarkInterface::DgdWarmStart<DgdSolverType::CuttingPlane,
