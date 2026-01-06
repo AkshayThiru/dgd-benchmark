@@ -27,28 +27,28 @@ end
 
 # --- Convex Primitive Parameter Ranges ---
 struct CapsuleRanges{T}
-  R::Tuple{T, T}
-  L::Tuple{T, T}
+  R::Tuple{T,T}
+  L::Tuple{T,T}
 end
 
 struct CylinderRanges{T}
-  R::Tuple{T, T}
-  L::Tuple{T, T}
+  R::Tuple{T,T}
+  L::Tuple{T,T}
 end
 
 struct ConeRanges{T}
-  H::Tuple{T, T}
-  β::Tuple{T, T}
+  H::Tuple{T,T}
+  β::Tuple{T,T}
 end
 
 struct SphereRanges{T}
-  R::Tuple{T, T}
+  R::Tuple{T,T}
 end
 
 struct EllipsoidRanges{T}
-  L₁::Tuple{T, T}
-  L₂::Tuple{T, T}
-  L₃::Tuple{T, T}
+  L₁::Tuple{T,T}
+  L₂::Tuple{T,T}
+  L₃::Tuple{T,T}
 end
 
 struct PrimitiveParameterRanges{T}
@@ -59,7 +59,7 @@ struct PrimitiveParameterRanges{T}
   ellipsoid::EllipsoidRanges{T}
 end
 
-function default_primitive_ranges(::Type{T} = Float64) where T
+function default_primitive_ranges(::Type{T}=Float64) where T
   PrimitiveParameterRanges{T}(
     CapsuleRanges{T}(
       (T(0.25 * 1e-2), T(0.25)), # R
@@ -86,7 +86,7 @@ end
 
 
 # --- Convex Primitve Generator --
-function randomize_parameters!(rng::Random.AbstractRNG, set::P, pr::PrimitiveParameterRanges{T}) where {P<:dc.AbstractPrimitive, T}
+function randomize_parameters!(rng::Random.AbstractRNG, set::P, pr::PrimitiveParameterRanges{T}) where {P<:dc.AbstractPrimitive,T}
   error("No method implemented for randomizing $(typeof(set)) parameters.")
 end
 

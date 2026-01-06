@@ -45,7 +45,7 @@ pr = default_primitive_ranges()
 
 nruns = npair * npose
 res_arr = BenchmarkResultArray(nruns)
-pbar = ProgressBar(total = nruns)
+pbar = ProgressBar(total=nruns)
 for i in 1:npair
   set1, set2 = random_primitive_pair!(rng, sets, pr)
   for j in 1:npose
@@ -55,12 +55,12 @@ for i in 1:npair
     G_ort1, h_ort1, G_soc1, h_soc1 = dc.problem_matrices(set1, set1.r, set1.q)
     G_ort2, h_ort2, G_soc2, h_soc2 = dc.problem_matrices(set2, set2.r, set2.q)
     # Create and solve SOCP
-    c, G, h, idx_ort, idx_soc1, idx_soc2 = dc.combine_problem_matrices(G_ort1, h_ort1, G_soc1, h_soc1,G_ort2, h_ort2, G_soc2, h_soc2)
-    x, s, z, iter = custom_solve_socp(c, G, h, idx_ort, idx_soc1, idx_soc2; pdip_tol = pdip_tol)
+    c, G, h, idx_ort, idx_soc1, idx_soc2 = dc.combine_problem_matrices(G_ort1, h_ort1, G_soc1, h_soc1, G_ort2, h_ort2, G_soc2, h_soc2)
+    x, s, z, iter = custom_solve_socp(c, G, h, idx_ort, idx_soc1, idx_soc2; pdip_tol=pdip_tol)
     # Compute solution errors
     prim_dual_gap = dot(s, z)
-    prim_infeas_err = norm(G*x + s - h)
-    solve_time = @belapsed dc.proximity($set1, $set2; verbose = false, pdip_tol = pdip_tol) samples=bm_samples seconds=max_bm_time_per_run
+    prim_infeas_err = norm(G * x + s - h)
+    solve_time = @belapsed dc.proximity($set1, $set2; verbose=false, pdip_tol=pdip_tol) samples = bm_samples seconds = max_bm_time_per_run
     add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_infeas_err, iter)
     update(pbar)
   end

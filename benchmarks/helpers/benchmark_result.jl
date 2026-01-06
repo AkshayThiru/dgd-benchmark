@@ -21,7 +21,7 @@ function BenchmarkResultArray(capacity::Int)
   return BenchmarkResultArray(solve_times, prim_dual_gaps, prim_infeas_errs, polytope_sizes, iters, capacity, 0)
 end
 
-function add_result!(res_arr::BenchmarkResultArray, solve_time::Float64, prim_dual_gap::Float64, prim_infeas_err::Float64, iter::Int; polytope_size::Int = -1, )
+function add_result!(res_arr::BenchmarkResultArray, solve_time::Float64, prim_dual_gap::Float64, prim_infeas_err::Float64, iter::Int; polytope_size::Int=-1,)
   if res_arr.current_size < res_arr.capacity
     idx = res_arr.current_size + 1
     res_arr.solve_times[idx] = solve_time
@@ -36,18 +36,18 @@ end
 function save_to_feather_file(res_arr::BenchmarkResultArray, filename::String, is_polytope_bm::Bool)
   if is_polytope_bm
     arrow_table = (
-      solve_time = res_arr.solve_times,
-      prim_dual_gap = res_arr.prim_dual_gaps,
-      prim_infeas_err = res_arr.prim_infeas_errs,
-      iter = res_arr.iters,
-      polytope_size = res_arr.polytope_sizes,
+      solve_time=res_arr.solve_times,
+      prim_dual_gap=res_arr.prim_dual_gaps,
+      prim_infeas_err=res_arr.prim_infeas_errs,
+      iter=res_arr.iters,
+      polytope_size=res_arr.polytope_sizes,
     )
   else
     arrow_table = (
-      solve_time = res_arr.solve_times,
-      prim_dual_gap = res_arr.prim_dual_gaps,
-      prim_infeas_err = res_arr.prim_infeas_errs,
-      iter = res_arr.iters,
+      solve_time=res_arr.solve_times,
+      prim_dual_gap=res_arr.prim_dual_gaps,
+      prim_infeas_err=res_arr.prim_infeas_errs,
+      iter=res_arr.iters,
     )
   end
 
@@ -55,6 +55,6 @@ function save_to_feather_file(res_arr::BenchmarkResultArray, filename::String, i
     Arrow.write(filename, arrow_table)
     println("Successfully wrote data to '$filename'")
   catch e
-    @error "Error writing Arrow file: " exception=(e, catch_backtrace())
+    @error "Error writing Arrow file: " exception = (e, catch_backtrace())
   end
 end

@@ -12,11 +12,11 @@ function read_obj_vertices(filepath::String)
   # Extract the coordinates of each point.
   vertices = GeometryBasics.coordinates(mesh)
   # Convert to a list of StaticArrays for convenience later.
-  points = [SVector{3, Float64}(v[1], v[2], v[3]) for v in vertices]
+  points = [SVector{3,Float64}(v[1], v[2], v[3]) for v in vertices]
   return points
 end
 
-function compute_convex_hull_hrep(points::Vector{SVector{3, Float64}})
+function compute_convex_hull_hrep(points::Vector{SVector{3,Float64}})
   # Create V-representation polyhedron.
   V_rep = vrep(points)
   P = polyhedron(V_rep, CDDLib.Library())
@@ -26,16 +26,16 @@ function compute_convex_hull_hrep(points::Vector{SVector{3, Float64}})
   A_rows = []
   b_vals = []
   for hspace in halfspaces(P)
-    push!(A_rows, SVector{3, Float64}(hspace.a))
+    push!(A_rows, SVector{3,Float64}(hspace.a))
     push!(b_vals, hspace.β)
   end
   A = reduce(vcat, transpose.(A_rows))
-  b = SVector{length(b_vals), Float64}(b_vals...)
+  b = SVector{length(b_vals),Float64}(b_vals...)
 
   return A, b
 end
 
-function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bound::Real = 1.0)
+function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bound::Real=1.0)
   if nrows < 6
     error("To guarantee boundedness, nrows must be at least 6.")
   end
@@ -56,7 +56,7 @@ function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bou
     push!(b_vec, box_bound)
   end
 
-  for _ in 1:(nrows - 6)
+  for _ in 1:(nrows-6)
     n = normalize(randn(rng, 3))
     b_i = (0.5 + rand(rng) * 0.5) * box_bound
 
@@ -64,7 +64,7 @@ function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bou
     push!(b_vec, b_i)
   end
 
-  A = SMatrix{nrows, 3, Float64}(reduce(vcat, transpose.(A_rows)))
-  b = SVector{nrows, Float64}(b_vec)
+  A = SMatrix{nrows,3,Float64}(reduce(vcat, transpose.(A_rows)))
+  b = SVector{nrows,Float64}(b_vec)
   return A, b
 end
