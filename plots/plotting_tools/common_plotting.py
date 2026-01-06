@@ -4,7 +4,6 @@ from typing import Optional, Union
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-
 import pandas as pd
 import seaborn as sns
 
@@ -122,12 +121,12 @@ def generate_filled_line_plot(
 
 def generate_combined_box_plots(
     # Data
-    df_dicts: list[
-        dict
-    ],  # A list of dictionaries: [{'method_A': df_1, 'method_B': df_2}, {'method_A': df_3, 'method_B': df_4}]
-    df_dict_labels: list[
-        str
-    ],  # A list of labels corresponding to each df_dict, e.g., ['Experiment X', 'Experiment Y']
+    # A list of dictionaries:
+    # [{'method_A': df_1, 'method_B': df_2}, {'method_A': df_3, 'method_B': df_4}]
+    df_dicts: list[dict],
+    # A list of labels corresponding to each df_dict,
+    # e.g., ['Experiment X', 'Experiment Y']
+    df_dict_labels: list[str],
     method_keys: list[str],  # e.g., ['method_A', 'method_B']
     method_labels: Optional[list[str]],  # Labels for the methods
     value_column_names: list[str],
@@ -186,9 +185,9 @@ def generate_combined_box_plots(
             exp_method_df = pd.concat(exp_method_data, ignore_index=True)
             # print(exp_method_df.info())
 
-            palette_dict = dict(
-                zip(method_labels, sns.color_palette(palette, len(method_labels)))
-            )
+            # palette_dict = dict(
+            #     zip(method_labels, sns.color_palette(palette, len(method_labels)))
+            # )
 
             sns.boxplot(
                 # Data
@@ -279,9 +278,9 @@ def generate_row_box_plots(
         exp_method_df = pd.concat(exp_method_data, ignore_index=True)
         # print(exp_method_df.info())
 
-        palette_dict = dict(
-            zip(method_labels, sns.color_palette(palette, len(method_labels)))
-        )
+        # palette_dict = dict(
+        #     zip(method_labels, sns.color_palette(palette, len(method_labels)))
+        # )
 
         sns.boxplot(
             # Data

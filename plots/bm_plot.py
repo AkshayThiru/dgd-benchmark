@@ -1,14 +1,17 @@
 import argparse
 import os
 
-import matplotlib.pyplot as plt
-
 import plotting_tools as pt
-from plotting_tools.common_plotting import (generate_combined_box_plots,
-                                            generate_filled_line_plot,
-                                            generate_row_box_plots, save_plot)
-from plotting_tools.data_reader import (calculate_masked_statistics,
-                                        read_feather_files_from_directory)
+from plotting_tools.common_plotting import (
+    generate_combined_box_plots,
+    generate_filled_line_plot,
+    generate_row_box_plots,
+    save_plot,
+)
+from plotting_tools.data_reader import (
+    calculate_masked_statistics,
+    read_feather_files_from_directory,
+)
 from plotting_tools.ieee_config import IEEE_SINGLE_COLUMN_WIDTH
 
 
@@ -43,16 +46,56 @@ def main():
         type=str,
         help="Path to the directory containing Feather log files.",
     )
+    parser.add_argument(
+        "--cp-lu",
+        action="store_true",
+        help="Cp solver: plot LU results, instead of Cramer",
+    )
+    parser.add_argument(
+        "--warm-dual",
+        action="store_true",
+        help="Cp solver: plot dual warm start results, instead of primal warm start",
+    )
+    parser.add_argument(
+        "--omit-trn", action="store_true", help="Omit Trn solver results"
+    )
     args = parser.parse_args()
     log_dir = args.log_directory
+    plot_cp_lu = args.cp_lu
+    plot_warm_dual = args.warm_dual
+    omit_trn = args.omit_trn
     output_dir = "plots/output"
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
     df_dicts = []
     exps = []
-    methods = ["dgd", "dcf", "ie", "inc", "dcol"]
-    method_labels = [r"Our", r"DCF", r"IE", r"Inc", r"DCol"]
+    # Methods
+    methods = []
+    if plot_cp_lu:
+        methods += ["dgd_cp_lu"]
+        methods += ["dgd_dual_cp_lu"] if plot_warm_dual else ["dgd_primal_cp_lu"]
+    else:
+        methods += ["dgd_cp_cramer"]
+        methods += (
+            ["dgd_dual_cp_cramer"] if plot_warm_dual else ["dgd_primal_cp_cramer"]
+        )
+    methods += [] if omit_trn else ["dgd_trn"]
+    methods += ["dcf", "ie", "inc", "dcol"]
+    # Method labels
+    dgd_name = r"DGD"  # NOTE
+    # dgd_name = r"Our"  # For double blind review
+    method_labels = []
+    if omit_trn:
+        method_labels += [dgd_name, dgd_name]  # Same name for cold and warm start
+    else:
+        method_labels += [
+            dgd_name + "\n" r"(Cp)",
+            dgd_name + "\n" r" (Cp)",
+            dgd_name + "\n" r" (Trn)",
+        ]
+    method_labels += [r"DCF", r"IE", r"Inc", r"DCol"]
+
     # Get data for combined box plot
     #   Primitive convex sets, cold-start
     df_dicts.append(
@@ -88,7 +131,7 @@ def main():
         ["solve_time", "iter"],
         [r"Solution time ($\mu s$)", r"Iterations"],
         # Figure
-        IEEE_SINGLE_COLUMN_WIDTH,
+        IEEE_SINGLE_COLUMN_WIDTH * 1.5,  # NOTE
         3.5,
         # Box properties
         whis=[0.01, 99.99],
@@ -100,7 +143,7 @@ def main():
     axs[0, 1].margins(x=0.1, y=0.1)
     axs[1, 1].margins(x=0.1, y=0.1)
 
-    plt.show()
+    # plt.show()  # NOTE
     save_plot(fig, os.path.join(output_dir, "solution_time_iters.png"), dpi=750)
 
     #   DSF: solutions and iterations
@@ -114,7 +157,7 @@ def main():
         ["solve_time", "iter"],
         [r"Solution time ($\mu s$)", r"Iterations"],
         # Figure
-        IEEE_SINGLE_COLUMN_WIDTH,
+        IEEE_SINGLE_COLUMN_WIDTH * 1.5,  # NOTE
         1.2,
         # Box properties
         box_width=1.0,
@@ -125,7 +168,7 @@ def main():
     axs[0, 1].set_yscale("log")
     axs[0, 1].set_ylim([6, 110])
 
-    plt.show()
+    # plt.show()  # NOTE
     save_plot(fig, os.path.join(output_dir, "solution_time_iters_dsf.png"), dpi=750)
 
     df_dicts.append(df_dict)
@@ -149,7 +192,7 @@ def main():
     ax.set_xscale("log")
     ax.set_yscale("log")
 
-    plt.show()
+    # plt.show()  # NOTE
     save_plot(fig, os.path.join(output_dir, "solution_time_polytope_size.png"), dpi=750)
 
     # Table of solution times

@@ -16,7 +16,7 @@ def read_feather_files_from_directory(
         filename = os.path.join(dir_path, prefix + name + ".feather")
 
         if not os.path.exists(filename):
-            print(f"Warning: File '{filename}' not found. Skipping.")
+            print(f"Info: File '{filename}' not found. Skipping.")
             continue
 
         try:
@@ -39,11 +39,13 @@ def calculate_masked_statistics(
             df_processed = df_processed[df_processed[mask_col]]
         elif mask_col not in df_processed.columns:
             print(
-                f"Warning: Masking column '{mask_col}' not found in DataFrame. Masking skipped."
+                f"Warning: Masking column '{mask_col}' not found in DataFrame. "
+                f"Masking skipped."
             )
         else:
             print(
-                f"Warning: Masking column '{mask_col}' is not of boolean type. Masking skipped."
+                f"Warning: Masking column '{mask_col}' is not of boolean type. "
+                f"Masking skipped."
             )
 
     # --- Calculate Numeric Statistics ---
@@ -71,14 +73,16 @@ def calculate_masked_statistics(
 
 
 def generate_comparison_box_plot_df(
-    df_dicts: list[
-        dict
-    ],  # A list of dictionaries: [{'method_A': df_1, 'method_B': df_2}, {'method_A': df_3, 'method_B': df_4}]
-    df_dict_labels: list[
-        str
-    ],  # A list of labels corresponding to each df_dict, e.g., ['Experiment X', 'Experiment Y']
+    # A list of dictionaries:
+    # [{'method_A': df_1, 'method_B': df_2}, {'method_A': df_3, 'method_B': df_4}]
+    df_dicts: list[dict],
+    # A list of labels corresponding to each df_dict,
+    # e.g., ['Experiment X', 'Experiment Y']
+    df_dict_labels: list[str],
     method_keys: list[str],  # e.g., ['method_A', 'method_B']
-    value_column_name: str,  # The name of the column within each DataFrame that holds the numerical values for plotting
+    # The name of the column within each DataFrame that holds the numerical values for
+    # plotting
+    value_column_name: str,
     method_labels: Optional[list[str]] = None,  # Labels for the methods
 ) -> pd.DataFrame:
     if not df_dicts:
@@ -86,20 +90,22 @@ def generate_comparison_box_plot_df(
         return
     if not df_dict_labels or len(df_dicts) != len(df_dict_labels):
         print(
-            "Error: 'df_dict_labels' must be provided and match the number of 'df_dicts'."
+            "Error: 'df_dict_labels' must be provided and match the number of "
+            "'df_dicts'."
         )
         return
     if not method_keys or (
         method_labels is not None and len(method_keys) != len(method_labels)
     ):
         print(
-            "Error: 'method_keys' list must be nonempty and must match the number of 'method_labels' (if provided)."
+            "Error: 'method_keys' list must be nonempty and must match the number "
+            "of 'method_labels' (if provided)."
         )
         return
 
     # --- Prepare the data for plotting ---
-    # We need to combine data from all relevant DataFrames into a single, long-form DataFrame
-    # suitable for seaborn.
+    # We need to combine data from all relevant DataFrames into a single,
+    # long-form DataFrame suitable for seaborn.
 
     combined_data = []
     for i, df_dict in enumerate(df_dicts):
@@ -111,7 +117,9 @@ def generate_comparison_box_plot_df(
                 df = df_dict[method].copy()
                 if value_column_name not in df.columns:
                     print(
-                        f"Warning: Column '{value_column_name}' not found in DataFrame for method '{method}' from experiment '{exp}'. Skipping this data slice."
+                        f"Warning: Column '{value_column_name}' not found in "
+                        f"DataFrame for method '{method}' from experiment '{exp}'. "
+                        f"Skipping this data slice."
                     )
                     continue
 
@@ -124,12 +132,14 @@ def generate_comparison_box_plot_df(
                 combined_data.append(df_subset)
             else:
                 print(
-                    f"Warning: Key '{method}' not found or is not a DataFrame in the data dictionary for label '{exp}'. Skipping."
+                    f"Info: Key '{method}' not found or is not a DataFrame in the "
+                    f"data dictionary for label '{exp}'. Skipping."
                 )
 
     if not combined_data:
         print(
-            "No valid data found for plotting after combining. Check keys, column names, and dataframes."
+            "Warning: No valid data found for plotting after combining. "
+            "Check keys, column names, and dataframes."
         )
         return
 
@@ -137,7 +147,8 @@ def generate_comparison_box_plot_df(
     # and '__exp__' for coloring/grouping the box plots.
     df_for_plotting = pd.concat(combined_data, ignore_index=True)
 
-    # print(f"Data prepared for plotting. Combined DataFrame shape: {df_for_plotting.shape}")
+    # print(f"Data prepared for plotting. " \
+    #       f"Combined DataFrame shape: {df_for_plotting.shape}")
     # print("First 5 rows of combined data:")
     # print(df_for_plotting.head())
 

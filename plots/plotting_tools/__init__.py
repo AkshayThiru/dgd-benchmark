@@ -1,7 +1,7 @@
 from .ieee_config import (
-    apply_ieee_mpl_settings,
-    IEEE_SINGLE_COLUMN_WIDTH,
     IEEE_DOUBLE_COLUMN_WIDTH,
+    IEEE_SINGLE_COLUMN_WIDTH,
+    apply_ieee_mpl_settings,
 )
 
 

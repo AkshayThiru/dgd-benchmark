@@ -27,9 +27,9 @@ def apply_ieee_mpl_settings(column_width="single"):
 
     # --- Figure Dimensions ---
     mpl.rcParams["figure.figsize"] = (fig_width, fig_height)
-    mpl.rcParams[
-        "figure.dpi"
-    ] = 300  # 300 for standard print resolution (or 600 for line art)
+    mpl.rcParams["figure.dpi"] = (
+        300  # 300 for standard print resolution (or 600 for line art)
+    )
 
     # --- Font Sizes ---
     mpl.rcParams["font.size"] = FONT_SIZE_MEDIUM
