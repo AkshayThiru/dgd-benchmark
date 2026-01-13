@@ -5,6 +5,7 @@ import plotting_tools as pt
 from plotting_tools.common_plotting import (
     generate_combined_box_plots,
     generate_filled_line_plot,
+    generate_line_plot_quantile,
     generate_row_box_plots,
     save_plot,
 )
@@ -83,16 +84,16 @@ def main():
     methods += [] if omit_trn else ["dgd_trn"]
     methods += ["dcf", "ie", "inc", "dcol"]
     # Method labels
-    dgd_name = r"DGD"  # NOTE
-    # dgd_name = r"Our"  # For double blind review
+    # dgd_name = r"DGD"  # NOTE
+    dgd_name = r"Our"  # For double blind review
     method_labels = []
     if omit_trn:
         method_labels += [dgd_name, dgd_name]  # Same name for cold and warm start
     else:
         method_labels += [
-            dgd_name + "\n" r"(Cp)",
-            dgd_name + "\n" r" (Cp)",
-            dgd_name + "\n" r" (Trn)",
+            dgd_name + "\n" r"(CP)",
+            dgd_name + "\n" r" (CP)",
+            dgd_name + "\n" r" (TRN)",
         ]
     method_labels += [r"DCF", r"IE", r"Inc", r"DCol"]
 
@@ -175,25 +176,65 @@ def main():
     exps.append(r"DSF sets, cold start")
 
     #   Solution time vs polytope size
-    df_dict = read_feather_files_from_directory(log_dir, "polytope_bm__cold_", ["dcol"])
+    method_keys = ["dcol", "dgd_polytope", "dgd_mesh"]
+    method_labels = [r"DCol", dgd_name + r" (polytope)", dgd_name + r" (mesh)"]
+    df_dict = read_feather_files_from_directory(
+        log_dir, "polytope_bm__cold_", method_keys
+    )
     fig, ax = generate_filled_line_plot(
         # Data
-        df_dict["dcol"],
+        df_dict,
+        method_keys,
+        method_labels,
         "polytope_size",
         "solve_time",
-        r"Number of polytope hyperplanes",
+        r"Number of polytope vertices",
         r"Solution time ($\mu s$)",
         # Figure
         IEEE_SINGLE_COLUMN_WIDTH,
-        1.3,
+        1.75,
+        # Colors
+        line_colors=["#1f77b4", "#ff7f0e", "#2ca02c"],
+        fill_colors=["#1f77b4", "#ff7f0e", "#2ca02c"],
+        # Markers
+        markersize=0.5,
         # Box properties
-        percentiles=[0.1, 0.9],
+        percentiles=[0.0, 1.0],
     )
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_ylim([3e-1, 1e4])
+    if len(method_keys) > 1:
+        ax.legend(loc="upper right")
 
     # plt.show()  # NOTE
     save_plot(fig, os.path.join(output_dir, "solution_time_polytope_size.png"), dpi=750)
+
+    #   Convergence error vs iteration
+    method_keys = ["primitive", "mesh_1e-2"]
+    method_suffixes = ["primitive", "mesh"]
+    df_dict = read_feather_files_from_directory(
+        log_dir, "convergence_bm__", method_keys
+    )
+    for i in range(len(method_keys)):
+        fig, ax = generate_line_plot_quantile(
+            # Data
+            df_dict[method_keys[i]],
+            r"Iteration",
+            r"Relative gap",
+            # Figure
+            IEEE_SINGLE_COLUMN_WIDTH,
+            1.3,
+        )
+        ax.set_yscale("log")
+        ax.set_ylim([1e-9, 1e3])
+
+        # plt.show()  # NOTE
+        save_plot(
+            fig,
+            os.path.join(output_dir, "convergence_rate_" + method_suffixes[i] + ".png"),
+            dpi=750,
+        )
 
     # Table of solution times
     # Create input for function

@@ -62,7 +62,9 @@ def generate_box_plot(
 
 def generate_filled_line_plot(
     # Data
-    df: pd.DataFrame,  # DataFrame with columns: x_column_name, y_column_name
+    df_dict: dict,  # Dictionary: {'method_A': df_1, 'method_B': df_2}
+    method_keys: list[str],  # e.g., ['method_A', 'method_B']
+    method_labels: list[str],  # Labels for the methods
     x_column_name: str,
     y_column_name: str,
     x_label: str,
@@ -71,48 +73,108 @@ def generate_filled_line_plot(
     fig_width: float,  # in inches
     fig_height: float,  # in inches
     # Colors
-    line_color: str = "blue",
-    fill_color: str = "skyblue",
+    line_colors: list[str] = [],
+    fill_colors: list[str] = [],
     # Line properties
     marker: str = "o",
     markersize: float = 1,
     # Fill properties
     percentiles: list[float] = [0.01, 0.99],
     alpha: float = 0.4,
+    # Other values
+    min_x_val: int = 10,
 ) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
-    summary_df = (
-        df.groupby(x_column_name)[y_column_name]
-        .agg(
-            median=lambda x: x.quantile(0.5),
-            plow=lambda x: x.quantile(percentiles[0]),
-            phigh=lambda x: x.quantile(percentiles[1]),
-        )
-        .reset_index()
-    )
-
     fig, ax = plt.subplots(
         figsize=(fig_width, fig_height), dpi=400, layout="constrained"
     )
+    for i, method_key in enumerate(method_keys):
+        summary_df = (
+            df_dict[method_key]
+            .groupby(x_column_name)[y_column_name]
+            .agg(
+                median=lambda x: x.quantile(0.5),
+                plow=lambda x: x.quantile(percentiles[0]),
+                phigh=lambda x: x.quantile(percentiles[1]),
+            )
+            .reset_index()
+        )
+
+        idx = summary_df[x_column_name] >= min_x_val
+        ax.plot(
+            summary_df[x_column_name][idx],
+            summary_df["median"][idx],
+            marker=marker,
+            markersize=markersize,
+            ls="-",
+            color=line_colors[i] if line_colors else f"C{i}",
+            label=method_labels[i] if method_labels else method_key,
+        )
+        ax.fill_between(
+            summary_df[x_column_name][idx],
+            summary_df["plow"][idx],
+            summary_df["phigh"][idx],
+            color=fill_colors[i] if fill_colors else f"C{i}",
+            alpha=alpha,
+        )
+
+    ax.set_xlabel(x_label)
+    ax.tick_params(axis="x", labelbottom=True)
+    ax.set_ylabel(y_label)
+    ax.tick_params(axis="y", labelleft=True)
+    # Other properties
+    ax.margins(x=0.05, y=0.05)
+    ax.grid(axis="y")
+    return fig, ax
+
+
+def generate_line_plot_quantile(
+    # Data
+    df: dict,  # Dictionary: {'method_A': df_1, 'method_B': df_2}
+    x_label: str,
+    y_label: str,
+    # Figure
+    fig_width: float,  # in inches
+    fig_height: float,  # in inches
+    # Tolerance
+    tolerance: float = np.sqrt(np.finfo(float).eps),
+    # Line properties
+    marker: str = "o",
+    markersize: float = 1,
+) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
+    fig, ax = plt.subplots(
+        figsize=(fig_width, fig_height), dpi=400, layout="constrained"
+    )
+    iter = range(1, len(df["q50"]) + 1)
     ax.plot(
-        summary_df[x_column_name],
-        summary_df["median"],
+        iter,
+        df["q50"],
         marker=marker,
         markersize=markersize,
         ls="-",
-        color=line_color,
+        color="b",
+        label="median",
     )
-    ax.fill_between(
-        summary_df[x_column_name],
-        summary_df["plow"],
-        summary_df["phigh"],
-        color=fill_color,
-        alpha=alpha,
+    ax.plot(
+        iter,
+        df["max"],
+        ls="-.",
+        color="k",
+        label="max",
+    )
+    ax.plot(
+        iter,
+        tolerance * np.ones_like(df["q50"]),
+        ls="--",
+        lw=0.75,
+        color="r",
+        label=r"tolerance, $\epsilon_{tol}$",
     )
 
     ax.set_xlabel(x_label)
     ax.tick_params(axis="x", labelbottom=True)
     ax.set_ylabel(y_label)
     ax.tick_params(axis="y", labelleft=True)
+    ax.legend()
     # Other properties
     ax.margins(x=0.05, y=0.05)
     ax.grid(axis="y")
@@ -231,7 +293,7 @@ def generate_row_box_plots(
     # Data
     df_dict: dict,  # Dictionary: {'method_A': df_1, 'method_B': df_2}
     method_keys: list[str],  # e.g., ['method_A', 'method_B']
-    method_labels: Optional[list[str]],  # Labels for the methods
+    method_labels: list[str],  # Labels for the methods
     value_column_names: list[str],
     y_labels: list[str],
     # Figure
