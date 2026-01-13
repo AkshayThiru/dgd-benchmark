@@ -14,12 +14,14 @@ using ProgressBars
 
 
 nstep = 10
-npair = 10
-npose = 1
+npair = 5
+npose = 10
+
+skew = 1e-1
 
 pdip_tol = 1e-6
 position_range = 5.0
-bm_samples = 15
+bm_samples = 3
 max_bm_time_per_run = 1 * 1e-3
 
 if length(ARGS) < 1
@@ -34,16 +36,21 @@ if !isdir(log_path)
 end
 
 rng = Random.MersenneTwister(5489)
-nrows = [round(Int, 2^p) for p in range(3, 8.5, length=nstep)]
+nverts = [round(Int, exp(p)) for p in range(log(10), log(250), length=nstep)]
 position_range = 5.0
 
 nruns = nstep * npair * npose
 res_arr = BenchmarkResultArray(nruns)
 pbar = ProgressBar(total=nruns)
-for nrow in nrows
+for nvert in nverts
+  A, b = generate_random_polyhedron(rng, nvert)
   for i in 1:npair
-    A₁, b₁ = generate_random_polyhedron(rng, nrow)
-    A₂, b₂ = generate_random_polyhedron(rng, nrow)
+    half_lengths1 = get_half_lengths(rng, skew)
+    half_lengths2 = get_half_lengths(rng, skew)
+    A₁ = A * diagm(inv.(half_lengths1))
+    A₂ = A * diagm(inv.(half_lengths2))
+    b₁ = b
+    b₂ = b
     set1 = dc.Polytope(A₁, b₁)
     set2 = dc.Polytope(A₂, b₂)
     for j in 1:npose
@@ -59,7 +66,7 @@ for nrow in nrows
       prim_dual_gap = dot(s, z)
       prim_infeas_err = norm(G * x + s - h)
       solve_time = @belapsed dc.proximity($set1, $set2; verbose=false, pdip_tol=pdip_tol) samples = bm_samples seconds = max_bm_time_per_run
-      add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_infeas_err, iter; polytope_size=nrow)
+      add_result!(res_arr, solve_time * 1e6, prim_dual_gap, prim_infeas_err, iter; polytope_size=nvert)
       ProgressBars.update(pbar)
     end
   end

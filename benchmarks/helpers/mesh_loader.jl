@@ -35,36 +35,31 @@ function compute_convex_hull_hrep(points::Vector{SVector{3,Float64}})
   return A, b
 end
 
-function generate_random_polyhedron(rng::Random.AbstractRNG, nrows::Int, box_bound::Real=1.0)
-  if nrows < 6
-    error("To guarantee boundedness, nrows must be at least 6.")
+function get_half_lengths(rng::Random.AbstractRNG, skew::Real)
+  if !(1e-3 <= skew <= 1.0)
+    error("skew must be in the range [1e-3, 1.0]")
   end
 
-  A_rows = []
-  b_vec = []
+  log_skew = log(skew)
+  rand_skew = exp(log_skew + rand(rng) * (0.0 - log_skew))
+  half_lengths = SVector{3,Float64}(skew, rand_skew, 1.0)
+  return half_lengths
+end
 
-  for j in 1:3
-    # Positive bound: x_j <= box_bound.
-    ej_pos = zeros(3)
-    ej_pos[j] = 1.0
-    push!(A_rows, SVector{3}(ej_pos))
-    push!(b_vec, box_bound)
-    # Negative bound -x_j <= box_bound.
-    ej_neg = zeros(3)
-    ej_neg[j] = -1.0
-    push!(A_rows, SVector{3}(ej_neg))
-    push!(b_vec, box_bound)
+function generate_random_polyhedron(rng::Random.AbstractRNG, nvert::Int, radius::Real=0.25)
+  # Generate nvert random points on the ellipsoid surface.
+  points = Vector{SVector{3,Float64}}(undef, nvert)
+  for i in 1:nvert
+    u = randn(rng, 3)
+    u_normalized = radius * normalize(u)
+    points[i] = SVector{3,Float64}(u_normalized)
   end
 
-  for _ in 1:(nrows-6)
-    n = normalize(randn(rng, 3))
-    b_i = (0.5 + rand(rng) * 0.5) * box_bound
+  # Set the center point as the origin.
+  center = sum(points) / nvert
+  points = [p - center for p in points]
 
-    push!(A_rows, SVector{3}(n))
-    push!(b_vec, b_i)
-  end
-
-  A = SMatrix{nrows,3,Float64}(reduce(vcat, transpose.(A_rows)))
-  b = SVector{nrows,Float64}(b_vec)
-  return A, b
+  A, b = compute_convex_hull_hrep(points)
+  nrows = size(A, 1)
+  return SMatrix{nrows,3,Float64}(A), b
 end
