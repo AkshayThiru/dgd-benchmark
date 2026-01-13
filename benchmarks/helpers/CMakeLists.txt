@@ -1,6 +1,7 @@
 add_library(benchmark_helper STATIC
   "${CMAKE_CURRENT_SOURCE_DIR}/benchmark_result.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/benchmark_interface.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/convergence_result.cc"
 )
 
 target_include_directories(benchmark_helper
