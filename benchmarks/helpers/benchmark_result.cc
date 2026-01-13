@@ -6,53 +6,28 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
+
+#include "helpers/arrow_utils.h"
 
 namespace bench {
 
 namespace {
 
-arrow::Result<std::shared_ptr<arrow::Array>> MakeDoubleArray(
-    const std::vector<double>& data) {
-  arrow::DoubleBuilder builder;
-  ARROW_RETURN_NOT_OK(builder.AppendValues(data.data(), data.size()));
-  std::shared_ptr<arrow::Array> array;
-  ARROW_RETURN_NOT_OK(builder.Finish(&array));
-  return array;
-}
-
-// Assumes int maps to arrow::int32().
-[[maybe_unused]] arrow::Result<std::shared_ptr<arrow::Array>> MakeInt32Array(
-    const std::vector<int>& data) {
-  arrow::Int32Builder builder;
-  ARROW_RETURN_NOT_OK(builder.AppendValues(data.data(), data.size()));
-  std::shared_ptr<arrow::Array> array;
-  ARROW_RETURN_NOT_OK(builder.Finish(&array));
-  return array;
-}
-
-// Specialization for std::vector<bool> because of its packed nature.
-arrow::Result<std::shared_ptr<arrow::Array>> MakeBooleanArray(
-    const std::vector<bool>& data) {
-  arrow::BooleanBuilder builder;
-  ARROW_RETURN_NOT_OK(builder.Reserve(data.size()));
-  for (bool val : data) {
-    ARROW_RETURN_NOT_OK(builder.Append(val));
-  }
-  std::shared_ptr<arrow::Array> array;
-  ARROW_RETURN_NOT_OK(builder.Finish(&array));
-  return array;
-}
-
 arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
                                 const std::string& filename) {
-  std::shared_ptr<arrow::Schema> schema =
-      arrow::schema({arrow::field("solve_time", arrow::float64()),
-                     arrow::field("prim_dual_gap", arrow::float64()),
-                     arrow::field("prim_infeas_err", arrow::float64()),
-                     arrow::field("dual_infeas_err", arrow::float64()),
-                     arrow::field("iter", arrow::float64()),
-                     arrow::field("optimal", arrow::boolean())});
+  std::vector<std::shared_ptr<arrow::Field>> fields = {
+      arrow::field("solve_time", arrow::float64()),
+      arrow::field("prim_dual_gap", arrow::float64()),
+      arrow::field("prim_infeas_err", arrow::float64()),
+      arrow::field("dual_infeas_err", arrow::float64()),
+      arrow::field("iter", arrow::float64()),
+      arrow::field("optimal", arrow::boolean())};
+
+  if (res_arr.store_polytope_size) {
+    fields.push_back(arrow::field("polytope_size", arrow::int32()));
+  }
+
+  std::shared_ptr<arrow::Schema> schema = arrow::schema(fields);
 
   std::shared_ptr<arrow::Array> solve_time_array;
   ARROW_ASSIGN_OR_RAISE(solve_time_array, MakeDoubleArray(res_arr.solve_times));
@@ -76,15 +51,18 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
   ARROW_ASSIGN_OR_RAISE(optimal_flag_array,
                         MakeBooleanArray(res_arr.optimal_flags));
 
-  std::shared_ptr<arrow::Table> table{
-      arrow::Table::Make(schema, {
-                                     solve_time_array,
-                                     prim_dual_gap_array,
-                                     prim_infeas_err_array,
-                                     dual_infeas_err_array,
-                                     iter_array,
-                                     optimal_flag_array,
-                                 })};
+  std::vector<std::shared_ptr<arrow::Array>> arrays = {
+      solve_time_array,      prim_dual_gap_array, prim_infeas_err_array,
+      dual_infeas_err_array, iter_array,          optimal_flag_array};
+
+  if (res_arr.store_polytope_size) {
+    std::shared_ptr<arrow::Array> polytope_size_array;
+    ARROW_ASSIGN_OR_RAISE(polytope_size_array,
+                          MakeInt32Array(res_arr.polytope_sizes));
+    arrays.push_back(polytope_size_array);
+  }
+
+  std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, arrays);
 
   std::shared_ptr<arrow::io::FileOutputStream> file;
   ARROW_ASSIGN_OR_RAISE(file, arrow::io::FileOutputStream::Open(filename));
@@ -97,7 +75,7 @@ arrow::Status SaveToFeatherFile(const BenchmarkResultArray& res_arr,
 
 }  // namespace
 
-bool BenchmarkResultArray::SaveToFile(const std::string& filename) {
+bool BenchmarkResultArray::SaveToFile(const std::string& filename) const {
   arrow::Status status = SaveToFeatherFile(*this, filename);
   if (!status.ok()) {
     std::cerr << "Failed to write Feather file: " << status.ToString()

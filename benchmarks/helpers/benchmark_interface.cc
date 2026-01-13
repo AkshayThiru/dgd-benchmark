@@ -4,6 +4,7 @@
 
 #include "dgd/error_metrics.h"
 #include "dgd/geometry/3d/mesh.h"
+#include "dgd/geometry/3d/polytope.h"
 #include "dgd/mesh_loader.h"
 #include "dgd/solvers/bundle_scheme_impl.h"
 #include "inc/solution_error.h"
@@ -215,7 +216,8 @@ void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
                                       const dgd::Transform3r& tf1,
                                       const dgd::ConvexSet<3>* set2,
                                       const dgd::Transform3r& tf2,
-                                      BenchmarkResultArray& res_arr) {
+                                      BenchmarkResultArray& res_arr,
+                                      int polytope_size) {
   using dgd::BcSolverType;
   [[maybe_unused]] constexpr BcSolverType bst = (BST == DgdBcSolverType::Cramer)
                                                     ? BcSolverType::kCramer
@@ -249,6 +251,7 @@ void BenchmarkInterface::DgdColdStart(const dgd::ConvexSet<3>* set1,
   res.prim_infeas_err = err.prim_infeas_err;
   res.dual_infeas_err = err.dual_infeas_err;
   res.iter = double(out.iter);
+  res.polytope_size = polytope_size;
   res.optimal_flag = (out.status == dgd::SolutionStatus::CoincidentCenters) ||
                      (out.status == dgd::SolutionStatus::Optimal);
   res_arr.AddResult(res);
@@ -258,19 +261,19 @@ template void BenchmarkInterface::DgdColdStart<DgdSolverType::CuttingPlane,
                                                DgdBcSolverType::Cramer>(
     const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
     const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
-    BenchmarkResultArray& res_arr);
+    BenchmarkResultArray& res_arr, int polytope_size);
 
 template void BenchmarkInterface::DgdColdStart<DgdSolverType::CuttingPlane,
                                                DgdBcSolverType::LU>(
     const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
     const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
-    BenchmarkResultArray& res_arr);
+    BenchmarkResultArray& res_arr, int polytope_size);
 
 template void BenchmarkInterface::DgdColdStart<DgdSolverType::TrustRegionNewton,
                                                DgdBcSolverType::LU>(
     const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
     const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
-    BenchmarkResultArray& res_arr);
+    BenchmarkResultArray& res_arr, int polytope_size);
 
 namespace {
 
@@ -367,5 +370,15 @@ template void BenchmarkInterface::DgdWarmStart<DgdSolverType::CuttingPlane,
     const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
     const dgd::Vec3r& dx, const dgd::Rotation3r& drot,
     BenchmarkResultArray& res_arr, dgd::WarmStartType ws_type);
+
+const std::shared_ptr<dgd::ConvexSet<3>>
+BenchmarkInterface::GetRandomEllipsoidalPolytope(int nvert, double skew) const {
+  return generator_->GetRandomEllipsoidalPolytope<dgd::Polytope>(nvert, skew);
+}
+
+const std::shared_ptr<dgd::ConvexSet<3>>
+BenchmarkInterface::GetRandomEllipsoidalMesh(int nvert, double skew) const {
+  return generator_->GetRandomEllipsoidalPolytope<dgd::Mesh>(nvert, skew);
+}
 
 }  // namespace bench

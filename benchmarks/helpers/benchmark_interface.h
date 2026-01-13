@@ -86,7 +86,7 @@ class BenchmarkInterface {
   template <DgdSolverType S, DgdBcSolverType BST>
   void DgdColdStart(const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
                     const dgd::ConvexSet<3>* set2, const dgd::Transform3r& tf2,
-                    BenchmarkResultArray& res_arr);
+                    BenchmarkResultArray& res_arr, int polytope_size = -1);
 
   template <DgdSolverType S, DgdBcSolverType BST>
   void DgdWarmStart(const dgd::ConvexSet<3>* set1, const dgd::Transform3r& tf1,
@@ -121,6 +121,12 @@ class BenchmarkInterface {
   const std::shared_ptr<dgd::ConvexSet<3>> RandomCurvedPrimitiveSet() const {
     return generator_->GetRandomCurvedPrimitive3DSet();
   }
+
+  const std::shared_ptr<dgd::ConvexSet<3>> GetRandomEllipsoidalPolytope(
+      int nvert, double skew) const;
+
+  const std::shared_ptr<dgd::ConvexSet<3>> GetRandomEllipsoidalMesh(
+      int nvert, double skew) const;
 
   int ncold() const { return ncold_; }
 

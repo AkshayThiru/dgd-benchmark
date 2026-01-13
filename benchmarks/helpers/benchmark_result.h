@@ -16,6 +16,7 @@ struct BenchmarkResult {
   double prim_infeas_err;
   double dual_infeas_err;
   double iter;
+  int polytope_size = -1;
   bool optimal_flag;
 };
 
@@ -26,11 +27,13 @@ struct BenchmarkResultArray {
   std::vector<double> prim_infeas_errs;
   std::vector<double> dual_infeas_errs;
   std::vector<double> iters;
+  std::vector<int> polytope_sizes;
   std::vector<bool> optimal_flags;
   int size;
   int idx;
+  bool store_polytope_size;
 
-  explicit BenchmarkResultArray(int size);
+  explicit BenchmarkResultArray(int size, bool store_polytope_size = false);
 
   void AddResult(const BenchmarkResult& res);
 
@@ -49,10 +52,11 @@ struct BenchmarkResultArray {
   void PrintStatistics() const;
 
   // Writes benchmark output to a Feather file.
-  bool SaveToFile(const std::string& filename);
+  bool SaveToFile(const std::string& filename) const;
 };
 
-inline BenchmarkResultArray::BenchmarkResultArray(int size)
+inline BenchmarkResultArray::BenchmarkResultArray(int size,
+                                                  bool store_polytope_size)
     : solve_times(size),
       prim_dual_gaps(size),
       prim_infeas_errs(size),
@@ -60,7 +64,10 @@ inline BenchmarkResultArray::BenchmarkResultArray(int size)
       iters(size),
       optimal_flags(size),
       size(size),
-      idx(0) {}
+      idx(0),
+      store_polytope_size(store_polytope_size) {
+  if (store_polytope_size) polytope_sizes.resize(size);
+}
 
 inline void BenchmarkResultArray::AddResult(const BenchmarkResult& res) {
   if (idx < size) {
@@ -69,6 +76,7 @@ inline void BenchmarkResultArray::AddResult(const BenchmarkResult& res) {
     prim_infeas_errs[idx] = res.prim_infeas_err;
     dual_infeas_errs[idx] = res.dual_infeas_err;
     iters[idx] = res.iter;
+    if (store_polytope_size) polytope_sizes[idx] = res.polytope_size;
     optimal_flags[idx] = res.optimal_flag;
     ++idx;
   }
