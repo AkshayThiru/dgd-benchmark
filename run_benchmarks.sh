@@ -9,6 +9,7 @@ cd build
 ./benchmarks/dsf_bm ../assets/ ../logs/
 ./benchmarks/mesh_bm ../assets/ ../logs/
 ./benchmarks/primitive_bm ../logs/
+./benchmarks/polytope_dgd_bm ../logs/
 cd ..
 
 
@@ -17,7 +18,17 @@ julia scripts/setup_julia_env.jl
 
 # Run Julia benchmarks
 julia benchmarks/polytope_dcol_bm.jl logs
-julia benchmarks/primitive_dcol_bm.jl logs  # NOTE
+julia benchmarks/primitive_dcol_bm.jl logs
+
+
+# Build convergence benchmarks
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DDGD_EXTRACT_METRICS=ON ..
+cmake --build . --parallel $(nproc)
+
+# Run the convergence rate benchmarks
+./benchmarks/convergence_bm ../logs/
+cd ..
 
 
 # Setup the Python environment

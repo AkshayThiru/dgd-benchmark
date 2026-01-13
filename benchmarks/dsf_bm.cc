@@ -9,7 +9,7 @@
 // Constants.
 const double position_lim = 5.0;
 const int npair = 1000, npose = 100;
-const int ncold = 1;
+const int ncold = 5;
 
 int main(int argc, char** argv) {
   if (argc < 3) {
