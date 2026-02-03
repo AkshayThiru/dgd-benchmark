@@ -23,21 +23,42 @@ def generate_latex_table_rows(
     fields: list[str],
     float_precision: int = 4,
 ) -> str:
-    latex_rows = []
-    latex_rows.append(" & ".join(["", ""] + methods) + r" \\")
-    for e, row in enumerate(data):
+    table_rows: list[list[str]] = []
+    header: list[str] = ["", ""] + methods
+    table_rows.append(header)
+
+    for e, row_data in enumerate(data):
+        exp_label = exps[e].replace("\n", " ")
         for field in fields:
-            formatted_cells = []
-            formatted_cells.append(exps[e].replace("\n", " ") + " & " + field)
-            for cell in row:
+            cells: list[str] = []
+            cells.append(exp_label)
+            cells.append(field)
+            for cell in row_data:
                 if not cell:
-                    formatted_cells.append("-")
+                    cells.append("-")
                 else:
-                    formatted_cells.append(
-                        f"${cell['solve_time'][field]:.{float_precision}f}$"
-                    )
-            latex_rows.append(" & ".join(formatted_cells) + r" \\")
-    return "\n".join(latex_rows)
+                    cells.append(f"${cell['solve_time'][field]:.{float_precision}f}$")
+            table_rows.append(cells)
+
+    # Compute max width per column
+    ncols = 2 + len(methods)
+    col_widths = [0] * ncols
+    for r in table_rows:
+        for c, val in enumerate(r):
+            col_widths[c] = max(col_widths[c], len(val))
+
+    # Format rows with padding: left-align first two columns, right-align numeric
+    # columns
+    lines: list[str] = []
+    for row in table_rows:
+        formatted_cells: list[str] = []
+        for c, val in enumerate(row):
+            if c < 2:
+                formatted_cells.append(val.ljust(col_widths[c]))
+            else:
+                formatted_cells.append(val.rjust(col_widths[c]))
+        lines.append(" & ".join(formatted_cells) + r" \\")
+    return "\n".join(lines)
 
 
 def main():
@@ -91,9 +112,9 @@ def main():
         method_labels += [dgd_name, dgd_name]  # Same name for cold and warm start
     else:
         method_labels += [
-            dgd_name + "\n" r"(CP)",
-            dgd_name + "\n" r" (CP)",
-            dgd_name + "\n" r" (TRN)",
+            dgd_name + "\n" r"(Cp)",
+            dgd_name + "\n" r" (Cp)",
+            dgd_name + "\n" r" (Trn)",
         ]
     method_labels += [r"DCF", r"IE", r"Inc", r"DCol"]
 
@@ -132,8 +153,8 @@ def main():
         ["solve_time", "iter"],
         [r"Solution time ($\mu s$)", r"Iterations"],
         # Figure
-        IEEE_SINGLE_COLUMN_WIDTH * 1.5,  # NOTE
-        3.5,
+        IEEE_SINGLE_COLUMN_WIDTH,  # 1.5 * IEEE_SINGLE_COLUMN_WIDTH
+        2.5,  # 3.5
         # Box properties
         whis=[0.01, 99.99],
     )
@@ -158,7 +179,7 @@ def main():
         ["solve_time", "iter"],
         [r"Solution time ($\mu s$)", r"Iterations"],
         # Figure
-        IEEE_SINGLE_COLUMN_WIDTH * 1.5,  # NOTE
+        IEEE_SINGLE_COLUMN_WIDTH,
         1.2,
         # Box properties
         box_width=1.0,
@@ -177,7 +198,7 @@ def main():
 
     #   Solution time vs polytope size
     method_keys = ["dcol", "dgd_polytope", "dgd_mesh"]
-    method_labels = [r"DCol", dgd_name + r" (polytope)", dgd_name + r" (mesh)"]
+    method_labels = [r"DCol", dgd_name, dgd_name + r" (hill-climbing)"]
     df_dict = read_feather_files_from_directory(
         log_dir, "polytope_bm__cold_", method_keys
     )
@@ -196,6 +217,7 @@ def main():
         # Colors
         line_colors=["#1f77b4", "#ff7f0e", "#2ca02c"],
         fill_colors=["#1f77b4", "#ff7f0e", "#2ca02c"],
+        alpha=0.2,
         # Markers
         markersize=0.5,
         # Box properties

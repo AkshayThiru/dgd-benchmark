@@ -8,10 +8,21 @@
 
 // Constants.
 const double position_lim = 5.0;
-const double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
 const int npair = 1000;
 const int npose_c = 100, npose_w = 100;
 const int ncold = 100, nwarm = 100;
+
+// Step ratio:
+//  1. < 1e-4:      Microadjustments,
+//  2. 1e-3 - 1e-2: Normal robot motion,
+//  3. 5e-2 - 0.10: Fast motion,
+//  4. > 0.20:      "Teleoperation"
+const double rho = 0.01;
+const double dt = 1e-3;
+
+inline double lin_velocity(double size) { return size * rho / dt; }
+
+inline double ang_velocity(double /*size*/) { return 2.0 * rho / dt; }
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -93,11 +104,13 @@ int main(int argc, char** argv) {
   for (int i = 0; i < npair; ++i) {
     const auto set1 = interface.RandomCurvedPrimitiveSet();
     const auto set2 = interface.RandomCurvedPrimitiveSet();
+    const double size = set1->Bounds();
     for (int j = 0; j < npose_w; ++j) {
       dgd::bench::SetRandomTransforms(interface.rng(), tf1, tf2, -position_lim,
                                       position_lim);
-      dgd::bench::SetRandomDisplacement(interface.rng(), dx, drot, dx_max,
-                                        ang_max);
+      dgd::bench::SetRandomDisplacement(interface.rng(), dx, drot,
+                                        lin_velocity(size) * dt,
+                                        ang_velocity(size) * dt);
       // DGD benchmark (primal warm start, cutting plane, Cramer's rule).
       interface.DgdWarmStart<DgdSolverType::CuttingPlane,
                              DgdBcSolverType::Cramer>(
